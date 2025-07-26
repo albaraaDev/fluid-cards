@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>غير متصل - Fluid Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 40px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(45deg, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+
+        .button {
+            display: inline-block;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon floating">📚</div>
+        <h1>غير متصل بالإنترنت</h1>
+        <p>
+            تطبيق Fluid Cards غير متاح حالياً. 
+            يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.
+        </p>
+        
+        <button class="button" onclick="checkConnection()">
+            إعادة المحاولة
+        </button>
+        
+        <div class="status">
+            <span id="status" class="pulse">جاري التحقق من الاتصال...</span>
+        </div>
+    </div>
+
+    <script>
+        let retryCount = 0;
+        const maxRetries = 5;
+
+        function checkConnection() {
+            const status = document.getElementById('status');
+            const button = document.querySelector('.button');
+            
+            button.textContent = 'جاري التحقق...';
+            button.disabled = true;
+            status.textContent = 'جاري التحقق من الاتصال...';
+            
+            // محاولة جلب صفحة صغيرة للتحقق من الاتصال
+            fetch('/', { 
+                method: 'HEAD',
+                cache: 'no-cache'
+            })
+            .then(response => {
+                if (response.ok) {
+                    status.textContent = 'تم استعادة الاتصال! جاري إعادة التحميل...';
+                    status.style.color = '#10b981';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error('No connection');
+                }
+            })
+            .catch(() => {
+                retryCount++;
+                button.textContent = 'إعادة المحاولة';
+                button.disabled = false;
+                
+                if (retryCount >= maxRetries) {
+                    status.textContent = 'لا يمكن الاتصال بالخادم. يرجى المحاولة لاحقاً.';
+                    status.style.color = '#ef4444';
+                } else {
+                    status.textContent = `فشل الاتصال. المحاولة ${retryCount} من ${maxRetries}`;
+                    status.style.color = '#f59e0b';
+                }
+            });
+        }
+
+        // التحقق التلقائي من الاتصال كل 30 ثانية
+        setInterval(() => {
+            if (navigator.onLine && retryCount < maxRetries) {
+                checkConnection();
+            }
+        }, 30000);
+
+        // الاستماع لأحداث الاتصال
+        window.addEventListener('online', () => {
+            const status = document.getElementById('status');
+            status.textContent = 'تم استعادة الاتصال! جاري إعادة التحميل...';
+            status.style.color = '#10b981';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        window.addEventListener('offline', () => {
+            const status = document.getElementById('status');
+            status.textContent = 'انقطع الاتصال بالإنترنت';
+            status.style.color = '#ef4444';
+        });
+    </script>
+</body>
+</html>
