@@ -324,7 +324,7 @@ export default function FlashcardApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-h-screen overflow-hidden bg-gray-50">
       {/* Header */}
       <SimpleHeader
         onExport={handleExport}
@@ -332,7 +332,7 @@ export default function FlashcardApp() {
       />
 
       {/* Main Content */}
-      <main className="min-h-screen">
+      <main className="max-h-[calc(100vh-75px)] overflow-auto">
         {renderContent()}
       </main>
 
