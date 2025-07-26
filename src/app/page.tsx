@@ -239,7 +239,7 @@ export default function FlashcardApp() {
       
       case 'stats':
         return (
-          <div className="max-w-4xl mx-auto px-4 py-6 pb-32">
+          <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
             <div className="bg-white rounded-3xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-8">الإحصائيات التفصيلية</h2>
               

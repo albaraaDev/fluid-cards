@@ -72,7 +72,7 @@ export default function CardsView({
   }, [filteredWords]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 pb-32">
+    <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -195,7 +195,7 @@ export default function CardsView({
       ) : (
         <div className={`
           ${viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-6' 
             : 'space-y-4'
           }
         `}>

@@ -24,7 +24,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
     // 3 كلمات عشوائية غير محفوظة
     const randomUnmastered = unmasteredWords
       .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+      .slice(0, 4);
     
     const progress = totalWords > 0 ? (masteredWords / totalWords) * 100 : 0;
     
@@ -77,7 +77,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 pb-32">
+    <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
       {/* Welcome Section */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">مرحباً بك</h2>
@@ -143,7 +143,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
             <span className="text-sm text-gray-500">اختيار عشوائي</span>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {stats.randomUnmastered.map((word) => (
               <ModernWordCard
                 key={word.id}

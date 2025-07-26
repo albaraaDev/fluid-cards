@@ -83,7 +83,7 @@ export default function ModernWordCard({
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowMenu(false)}
                 />
-                <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20">
+                <div className="absolute left-0 top-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -118,7 +118,7 @@ export default function ModernWordCard({
             {word.word}
           </h3>
           
-          <p className={`text-gray-700 leading-relaxed ${compact ? 'text-sm' : 'text-base'}`}>
+          <p className={`text-gray-700 leading-relaxed line-clamp-1 ${compact ? 'text-sm' : 'text-base'}`}>
             {word.meaning}
           </p>
         </div>

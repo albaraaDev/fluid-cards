@@ -12,7 +12,7 @@ interface SimpleHeaderProps {
 export default function SimpleHeader({ onExport, onImport, onSettings }: SimpleHeaderProps) {
   return (
     <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="max-w-2xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
