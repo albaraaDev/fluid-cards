@@ -1,95 +1,166 @@
 {
   "name": "Fluid Cards - بطاقات تعليمية ذكية",
   "short_name": "Fluid Cards",
-  "description": "تطبيق بطاقات تعليمية ذكي مع تصميم زجاجي عصري",
+  "description": "تطبيق بطاقات تعليمية ذكي مع تصميم عصري وتكرار متباعد. ادرس وراجع بطريقة تفاعلية وممتعة.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#1e40af",
-  "background_color": "#0f172a",
   "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#3B82F6",
+  "background_color": "#F8FAFC",
+  "categories": ["education", "productivity", "utilities", "lifestyle"],
+  
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96x96.png", 
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128", 
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/icons/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png", 
+      "purpose": "maskable"
     }
   ],
+  
   "shortcuts": [
     {
-      "name": "إنشاء مجموعة جديدة",
-      "short_name": "مجموعة جديدة",
-      "description": "إنشاء مجموعة بطاقات تعليمية جديدة",
-      "url": "/collections/new",
+      "name": "مراجعة سريعة",
+      "short_name": "مراجعة",
+      "description": "ابدأ جلسة مراجعة للكلمات التي تحتاج إعادة النظر",
+      "url": "/?mode=study",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
         }
       ]
     },
     {
-      "name": "البحث",
-      "short_name": "بحث",
-      "description": "البحث في البطاقات والمجموعات",
-      "url": "/search",
+      "name": "إضافة كلمة جديدة",
+      "short_name": "إضافة كلمة",
+      "description": "أضف كلمة جديدة لمجموعتك",
+      "url": "/?action=add",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icons/icon-192x192.png", 
+          "sizes": "192x192"
         }
       ]
     },
     {
-      "name": "الملف الشخصي",
-      "short_name": "الملف",
-      "description": "عرض الملف الشخصي والإحصائيات",
-      "url": "/profile",
+      "name": "الإحصائيات",
+      "short_name": "إحصائيات",
+      "description": "راجع تقدمك وإحصائيات الدراسة",
+      "url": "/?view=stats",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
         }
       ]
     }
   ],
-  "categories": ["education", "productivity", "lifestyle"],
+  
   "screenshots": [
     {
-      "src": "/screenshot-wide.png",
+      "src": "/screenshots/desktop-screenshot.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "الصفحة الرئيسية لتطبيق Fluid Cards"
+      "label": "الصفحة الرئيسية لتطبيق Fluid Cards على سطح المكتب"
     },
     {
-      "src": "/screenshot-mobile.png",
+      "src": "/screenshots/mobile-screenshot.png", 
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "واجهة الهاتف المحمول"
+      "label": "واجهة الهاتف المحمول لتطبيق Fluid Cards"
+    },
+    {
+      "src": "/screenshots/tablet-screenshot.png",
+      "sizes": "1024x768", 
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "واجهة الآيباد لتطبيق Fluid Cards"
     }
   ],
+  
   "prefer_related_applications": false,
   "related_applications": [],
+  
+  "protocol_handlers": [],
+  
   "edge_side_panel": {
     "preferred_width": 400
+  },
+  
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  
+  "launch_handler": {
+    "client_mode": "navigate-existing"
   }
 }
