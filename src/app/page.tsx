@@ -1,12 +1,16 @@
 // src/app/page.tsx
 'use client';
 
-import AddWordForm from '@/components/AddWordForm';
+import BottomNavigation from '@/components/BottomNavigation';
+import CardsView from '@/components/CardsView';
+import Dashboard from '@/components/Dashboard';
 import EditWordModal from '@/components/EditWordModal';
-import Header from '@/components/Header';
-import WordCard from '@/components/WordCard';
+import SimpleHeader from '@/components/SimpleHeader';
+import SlideUpAddForm from '@/components/SlideUpAddForm';
+import StudyView from '@/components/StudyView';
+import WordDetailsModal from '@/components/WordDetailsModal';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { FilterState, Word } from '@/types/flashcard';
+import { Word } from '@/types/flashcard';
 import React, { useMemo, useState } from 'react';
 
 const DEFAULT_CATEGORIES = ['عام', 'أعمال', 'تقنية', 'طبيعة', 'رياضة'];
@@ -50,56 +54,19 @@ const DEFAULT_WORDS: Word[] = [
   }
 ];
 
+type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
+
 export default function FlashcardApp() {
-  // استخدام localStorage بدلاً من sessionStorage
+  // localStorage hooks
   const [words, setWords] = useLocalStorage<Word[]>('flashcard_words', DEFAULT_WORDS);
   const [categories, setCategories] = useLocalStorage<string[]>('flashcard_categories', DEFAULT_CATEGORIES);
   
-  // حالات الفلاتر والواجهة
-  const [currentView, setCurrentView] = useState<'home' | 'study' | 'stats'>('home');
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    category: 'الكل',
-    difficulty: 'all',
-    sortBy: 'newest'
-  });
-  const [studyMode, setStudyMode] = useState(false);
-  const [studyIndex, setStudyIndex] = useState(0);
+  // UI state
+  const [currentTab, setCurrentTab] = useState<NavigationTab>('home');
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
-
-  // تصفية وترتيب الكلمات
-  const filteredWords = useMemo(() => {
-    const filtered = words.filter(word => {
-      const searchMatch = word.word.toLowerCase().includes(filters.search.toLowerCase()) ||
-                         word.meaning.toLowerCase().includes(filters.search.toLowerCase());
-      const categoryMatch = filters.category === 'الكل' || word.category === filters.category;
-      const difficultyMatch = filters.difficulty === 'all' || word.difficulty === filters.difficulty;
-      
-      return searchMatch && categoryMatch && difficultyMatch;
-    });
-
-    // ترتيب الكلمات
-    switch (filters.sortBy) {
-      case 'alphabetical':
-        filtered.sort((a, b) => a.word.localeCompare(b.word));
-        break;
-      case 'difficulty':
-        const difficultyOrder = { 'سهل': 1, 'متوسط': 2, 'صعب': 3 };
-        filtered.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
-        break;
-      case 'nextReview':
-        filtered.sort((a, b) => a.nextReview - b.nextReview);
-        break;
-      case 'oldest':
-        filtered.sort((a, b) => a.id - b.id);
-        break;
-      default: // newest
-        filtered.sort((a, b) => b.id - a.id);
-    }
-
-    return filtered;
-  }, [words, filters]);
+  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
   // إحصائيات
   const stats = useMemo(() => {
@@ -161,7 +128,9 @@ export default function FlashcardApp() {
 
   // حذف كلمة
   const handleDeleteWord = (wordId: number) => {
-    setWords(prev => prev.filter(word => word.id !== wordId));
+    if (confirm('هل أنت متأكد من حذف هذه الكلمة؟')) {
+      setWords(prev => prev.filter(word => word.id !== wordId));
+    }
   };
 
   // تعديل كلمة
@@ -199,8 +168,8 @@ export default function FlashcardApp() {
         URL.revokeObjectURL(element.href);
       }, 100);
       
-    } catch (error) {
-      console.error('خطأ في التصدير:', error);
+    } catch (err) {
+      console.error('خطأ في التصدير:', err);
       alert('حدث خطأ أثناء تصدير البيانات');
     }
   };
@@ -224,7 +193,9 @@ export default function FlashcardApp() {
           alert('ملف غير صالح! تأكد من أنه ملف نسخة احتياطية صحيح.');
         }
       } catch (err) {
-        alert('خطأ في قراءة الملف! تأكد من أنه ملف JSON صالح.' + err);
+        alert('خطأ في قراءة الملف! تأكد من أنه ملف JSON صالح.' + (err instanceof Error ? `: ${err.message}` : ''));
+        console.error('خطأ في استيراد البيانات:', err);
+        setShowImportModal(false);
       }
       
       // إعادة تعيين input
@@ -234,281 +205,205 @@ export default function FlashcardApp() {
     reader.readAsText(file);
   };
 
-  // إعادة تعيين البيانات
-  const handleResetData = () => {
-    if (confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
-      setWords(DEFAULT_WORDS);
-      setCategories(DEFAULT_CATEGORIES);
-    }
-  };
+  // render المحتوى حسب التاب المحدد
+  const renderContent = () => {
+    switch (currentTab) {
+      case 'home':
+        return (
+          <Dashboard
+            words={words}
+            onWordClick={setSelectedWord}
+            onEditWord={setEditingWord}
+            onDeleteWord={handleDeleteWord}
+          />
+        );
+      
+      case 'cards':
+        return (
+          <CardsView
+            words={words}
+            categories={categories}
+            onWordClick={setSelectedWord}
+            onEditWord={setEditingWord}
+            onDeleteWord={handleDeleteWord}
+          />
+        );
 
-  // بدء وضع الدراسة
-  const startStudyMode = () => {
-    const wordsToStudy = words.filter(w => w.nextReview <= Date.now());
-    if (wordsToStudy.length === 0) {
-      alert('لا توجد كلمات تحتاج للمراجعة الآن!');
-      return;
-    }
-    setStudyMode(true);
-    setStudyIndex(0);
-  };
+      case 'study':
+        return (
+          <StudyView
+            words={words}
+            onUpdateProgress={handleUpdateProgress}
+          />
+        );
+      
+      case 'stats':
+        return (
+          <div className="max-w-4xl mx-auto px-4 py-6 pb-32">
+            <div className="bg-white rounded-3xl p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">الإحصائيات التفصيلية</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="text-center p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalWords}</div>
+                  <div className="text-gray-600">إجمالي الكلمات</div>
+                </div>
+                
+                <div className="text-center p-6 bg-green-50 rounded-2xl border border-green-100">
+                  <div className="text-3xl font-bold text-green-600 mb-2">{stats.masteredWords}</div>
+                  <div className="text-gray-600">كلمات محفوظة</div>
+                </div>
+                
+                <div className="text-center p-6 bg-orange-50 rounded-2xl border border-orange-100">
+                  <div className="text-3xl font-bold text-orange-600 mb-2">{stats.wordsNeedingReview}</div>
+                  <div className="text-gray-600">تحتاج مراجعة</div>
+                </div>
+                
+                <div className="text-center p-6 bg-purple-50 rounded-2xl border border-purple-100">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">{stats.progress.toFixed(0)}%</div>
+                  <div className="text-gray-600">نسبة الإتقان</div>
+                </div>
+              </div>
 
-  if (studyMode) {
-    const wordsToStudy = words.filter(w => w.nextReview <= Date.now());
-    const currentWord = wordsToStudy[studyIndex];
+              {/* شريط التقدم */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">التقدم العام</h3>
+                  <span className="text-2xl font-bold text-purple-600">
+                    {stats.progress.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-1000"
+                    style={{ width: `${stats.progress}%` }}
+                  />
+                </div>
+                <div className="text-sm text-gray-600 mt-2 text-center">
+                  {stats.masteredWords} من {stats.totalWords} كلمات محفوظة
+                </div>
+              </div>
 
-    if (!currentWord) {
-      setStudyMode(false);
-      return null;
-    }
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-        <div className="max-w-2xl mx-auto">
-          {/* شريط التقدم */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-600">
-                {studyIndex + 1} من {wordsToStudy.length}
-              </span>
-              <button
-                onClick={() => setStudyMode(false)}
-                className="text-sm bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                إنهاء المراجعة
-              </button>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((studyIndex + 1) / wordsToStudy.length) * 100}%` }}
-              />
+              {/* إحصائيات التصنيفات */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">توزيع التصنيفات</h3>
+                <div className="space-y-3">
+                  {categories.map(category => {
+                    const categoryWords = words.filter(w => w.category === category);
+                    const categoryMastered = categoryWords.filter(w => w.correctCount >= 3).length;
+                    const categoryProgress = categoryWords.length > 0 ? (categoryMastered / categoryWords.length) * 100 : 0;
+                    
+                    return (
+                      <div key={category} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-gray-800">{category}</span>
+                            <span className="text-sm text-gray-600">
+                              {categoryMastered}/{categoryWords.length}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-blue-400 to-purple-500 h-2 rounded-full transition-all"
+                              style={{ width: `${categoryProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* بطاقة الدراسة */}
-          <WordCard
-            word={currentWord}
-            onEdit={() => {}}
-            onDelete={() => {}}
-            onUpdateProgress={(id, correct) => {
-              handleUpdateProgress(id, correct);
-              if (studyIndex < wordsToStudy.length - 1) {
-                setStudyIndex(prev => prev + 1);
-              } else {
-                setStudyMode(false);
-                alert('تم إنهاء جلسة المراجعة! أحسنت 🎉');
-              }
-            }}
-            isStudyMode={true}
-          />
-        </div>
-      </div>
-    );
-  }
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* الهيدر */}
-        <Header
-          totalWords={stats.totalWords}
-          masteredWords={stats.masteredWords}
-          onExport={handleExport}
-          onImport={() => setShowImportModal(true)}
-          onResetData={handleResetData}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <SimpleHeader
+        onExport={handleExport}
+        onImport={() => setShowImportModal(true)}
+      />
+
+      {/* Main Content */}
+      <main className="min-h-screen">
+        {renderContent()}
+      </main>
+
+      {/* Bottom Navigation */}
+      <BottomNavigation
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        onAddWord={() => setShowAddForm(true)}
+        wordsNeedingReview={stats.wordsNeedingReview}
+      />
+
+      {/* Slide-up Add Form */}
+      <SlideUpAddForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+        categories={categories}
+        onAddWord={handleAddWord}
+        onAddCategory={handleAddCategory}
+      />
+
+      {/* Word Details Modal */}
+      {selectedWord && (
+        <WordDetailsModal
+          word={selectedWord}
+          onClose={() => setSelectedWord(null)}
         />
+      )}
 
-        {/* أزرار التنقل */}
-        <div className="flex flex-wrap gap-4 mb-8">
-          <button
-            onClick={() => setCurrentView('home')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-              currentView === 'home'
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            📚 المجموعة
-          </button>
-          
-          <button
-            onClick={startStudyMode}
-            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-all shadow-lg"
-          >
-            🎯 مراجعة ({stats.wordsNeedingReview})
-          </button>
-          
-          <button
-            onClick={() => setCurrentView('stats')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-              currentView === 'stats'
-                ? 'bg-purple-500 text-white shadow-lg'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            📊 الإحصائيات
-          </button>
-        </div>
+      {/* Edit Word Modal */}
+      {editingWord && (
+        <EditWordModal
+          word={editingWord}
+          categories={categories}
+          onSave={handleEditWord}
+          onCancel={() => setEditingWord(null)}
+          onAddCategory={handleAddCategory}
+        />
+      )}
 
-        {currentView === 'home' && (
-          <>
-            {/* نموذج إضافة كلمة */}
-            <AddWordForm
-              categories={categories}
-              onAddWord={handleAddWord}
-              onAddCategory={handleAddCategory}
-            />
-
-            {/* أدوات البحث والفلترة */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input
-                  type="text"
-                  placeholder="🔍 البحث..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                />
-                
-                <select
-                  value={filters.category}
-                  onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="الكل">جميع التصنيفات</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                
-                <select
-                  value={filters.difficulty}
-                  onChange={(e) => setFilters(prev => ({ ...prev, difficulty: e.target.value as FilterState['difficulty'] }))}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">جميع المستويات</option>
-                  <option value="سهل">سهل</option>
-                  <option value="متوسط">متوسط</option>
-                  <option value="صعب">صعب</option>
-                </select>
-                
-                <select
-                  value={filters.sortBy}
-                  onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as FilterState['sortBy'] }))}
-                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="newest">الأحدث أولاً</option>
-                  <option value="oldest">الأقدم أولاً</option>
-                  <option value="alphabetical">أبجدياً</option>
-                  <option value="difficulty">حسب الصعوبة</option>
-                  <option value="nextReview">حسب موعد المراجعة</option>
-                </select>
-              </div>
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">استيراد البيانات</h3>
+              <p className="text-gray-600 text-sm">اختر ملف JSON الذي تم تصديره مسبقاً</p>
             </div>
-
-            {/* عرض الكلمات */}
-            {filteredWords.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📚</div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">لا توجد كلمات</h3>
-                <p className="text-gray-600">ابدأ بإضافة كلمة جديدة!</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredWords.map(word => (
-                  <WordCard
-                    key={word.id}
-                    word={word}
-                    onEdit={setEditingWord}
-                    onDelete={handleDeleteWord}
-                    onUpdateProgress={handleUpdateProgress}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {currentView === 'stats' && (
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">📊 الإحصائيات</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center p-6 bg-blue-50 rounded-xl">
-                <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalWords}</div>
-                <div className="text-gray-600">إجمالي الكلمات</div>
-              </div>
-              
-              <div className="text-center p-6 bg-green-50 rounded-xl">
-                <div className="text-3xl font-bold text-green-600 mb-2">{stats.masteredWords}</div>
-                <div className="text-gray-600">كلمات محفوظة</div>
-              </div>
-              
-              <div className="text-center p-6 bg-purple-50 rounded-xl">
-                <div className="text-3xl font-bold text-purple-600 mb-2">{stats.progress.toFixed(0)}%</div>
-                <div className="text-gray-600">نسبة الإتقان</div>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">التقدم العام</h3>
-              <div className="w-full bg-gray-200 rounded-full h-4">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.progress}%` }}
-                />
-              </div>
-              <div className="text-sm text-gray-600 mt-2">
-                {stats.masteredWords} من {stats.totalWords} كلمات محفوظة
-              </div>
-            </div>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+              id="import-file"
+            />
+            <label
+              htmlFor="import-file"
+              className="block w-full text-center bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 rounded-2xl font-semibold cursor-pointer transition-all mb-4"
+            >
+              اختيار ملف
+            </label>
+            
+            <button
+              onClick={() => setShowImportModal(false)}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-semibold transition-all"
+            >
+              إلغاء
+            </button>
           </div>
-        )}
-
-        {/* مودال الاستيراد */}
-        {showImportModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-              <div className="text-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">استيراد البيانات</h3>
-                <p className="text-gray-600 text-sm">اختر ملف JSON الذي تم تصديره مسبقاً</p>
-              </div>
-              
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-                id="import-file"
-              />
-              <label
-                htmlFor="import-file"
-                className="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-semibold cursor-pointer transition-all mb-4"
-              >
-                اختيار ملف
-              </label>
-              
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 rounded-xl font-semibold transition-all"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        )}
-        {/* مودال التعديل */}
-        {editingWord && (
-          <EditWordModal
-            word={editingWord}
-            categories={categories}
-            onSave={handleEditWord}
-            onCancel={() => setEditingWord(null)}
-            onAddCategory={handleAddCategory}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
