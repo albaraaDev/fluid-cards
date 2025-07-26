@@ -324,10 +324,11 @@ export default function FlashcardApp() {
   };
 
   return (
-    <div className="max-h-screen overflow-hidden bg-gray-50">
+    <div className="max-h-screen overflow-hidden bg-white/30 backdrop-blur-md">
       {/* Header */}
       <SimpleHeader
         onExport={handleExport}
+        onTabChange={setCurrentTab}
         onImport={() => setShowImportModal(true)}
       />
 

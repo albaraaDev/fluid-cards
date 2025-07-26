@@ -49,11 +49,11 @@ export default function BottomNavigation({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="bg-white/95 backdrop-blur-md border-t border-gray-200/50 shadow-lg">
-        <div className="max-w-md mx-auto px-6 py-4">
+      <div className="bg-white/10 backdrop-blur-sm border-t border-gray-200/50 shadow-lg">
+        <div className="max-w-sm mx-auto px-6 py-2">
           <div className="flex items-center justify-between relative">
             {/* Left tabs */}
-            <div className="flex space-x-8">
+            <div className="flex gap-4 items-center">
               {tabs.filter(tab => tab.position === 'left').map((tab) => {
                 const Icon = tab.icon;
                 const isActive = currentTab === tab.id;
@@ -62,10 +62,10 @@ export default function BottomNavigation({
                   <button
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
-                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 ${
+                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        : 'text-gray-500 hover:text-gray-700 justify-center hover:bg-gray-50'
                     }`}
                   >
                     <div className="relative">
@@ -81,11 +81,11 @@ export default function BottomNavigation({
                         </div>
                       )}
                     </div>
-                    <span className={`text-xs font-medium transition-all duration-200 ${
+                    {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
                       isActive ? 'opacity-100' : 'opacity-70'
                     }`}>
                       {tab.label}
-                    </span>
+                    </span>}
                   </button>
                 );
               })}
@@ -94,16 +94,16 @@ export default function BottomNavigation({
             {/* Center Add Button */}
             <button
               onClick={onAddWord}
-              className="absolute left-1/2 transform -translate-x-1/2 -translate-y-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 group"
+              className="absolute left-1/2 cursor-pointer transform -translate-x-1/2 -translate-y-9 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 group"
             >
               <Plus 
-                size={28} 
+                size={36} 
                 className="transition-transform duration-200 group-hover:rotate-90" 
               />
             </button>
 
             {/* Right tabs */}
-            <div className="flex space-x-8">
+            <div className="flex gap-4 items-center">
               {tabs.filter(tab => tab.position === 'right').map((tab) => {
                 const Icon = tab.icon;
                 const isActive = currentTab === tab.id;
@@ -112,10 +112,10 @@ export default function BottomNavigation({
                   <button
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
-                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 ${
+                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
                       isActive 
                         ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 justify-center'
                     }`}
                   >
                     <div className="relative">
@@ -131,11 +131,11 @@ export default function BottomNavigation({
                         </div>
                       )}
                     </div>
-                    <span className={`text-xs font-medium transition-all duration-200 ${
+                    {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
                       isActive ? 'opacity-100' : 'opacity-70'
                     }`}>
                       {tab.label}
-                    </span>
+                    </span>}
                   </button>
                 );
               })}
