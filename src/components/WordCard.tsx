@@ -146,7 +146,7 @@ export default function WordCard({
       {/* الملاحظة */}
       {word.note && (
         <div className="mb-4 p-3 bg-gray-700/50 rounded-lg border border-gray-600">
-          <p className="text-sm text-gray-400 italic">"{word.note}"</p>
+          <p className="text-sm text-gray-400 italic">&quot;{word.note}&quot;</p>
         </div>
       )}
 
@@ -182,7 +182,7 @@ export default function WordCard({
           <div className="bg-gray-800 rounded-2xl p-6 max-w-sm w-full mx-4 border border-gray-700">
             <h3 className="text-lg font-semibold text-white mb-4">تأكيد الحذف</h3>
             <p className="text-gray-400 mb-6">
-              هل أنت متأكد من حذف كلمة "{word.word}"؟ لا يمكن التراجع عن هذا الإجراء.
+              هل أنت متأكد من حذف كلمة {word.word}؟ لا يمكن التراجع عن هذا الإجراء.
             </p>
             <div className="flex gap-3">
               <button

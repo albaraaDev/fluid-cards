@@ -210,7 +210,7 @@ export default function AddWordForm({ categories, onAddWord, onAddCategory }: Ad
                   <button
                     key={level}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, difficulty: level as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, difficulty: level as 'سهل' | 'متوسط' | 'صعب' }))}
                     className={`p-3 rounded-xl border-2 transition-all font-medium ${
                       formData.difficulty === level
                         ? level === 'سهل' 

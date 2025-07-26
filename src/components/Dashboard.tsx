@@ -12,7 +12,7 @@ interface DashboardProps {
   onDeleteWord: (id: number) => void;
 }
 
-export default function Dashboard({ words }: DashboardProps) {
+const Dashboard: React.FC<DashboardProps> = ({ words }) => {
   // حساب الإحصائيات
   const stats = useMemo(() => {
     const totalWords = words.length;
@@ -95,7 +95,7 @@ export default function Dashboard({ words }: DashboardProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -176,4 +176,6 @@ export default function Dashboard({ words }: DashboardProps) {
       )}
     </div>
   );
-}
+};
+
+export default Dashboard;

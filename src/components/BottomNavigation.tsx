@@ -13,12 +13,12 @@ interface BottomNavigationProps {
   wordsNeedingReview: number;
 }
 
-export default function BottomNavigation({ 
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ 
   currentTab, 
   onTabChange, 
   onAddWord,
   wordsNeedingReview 
-}: BottomNavigationProps) {
+}) => {
   const tabs = [
     {
       id: 'home' as const,
@@ -141,4 +141,6 @@ export default function BottomNavigation({
       </div>
     </div>
   );
-}
+};
+
+export default BottomNavigation;

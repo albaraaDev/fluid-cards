@@ -89,9 +89,9 @@ export default function SlideUpAddForm({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50 p-4">
       <div className={`
-        bg-gray-800 rounded-t-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden
+        bg-gray-800 rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-hidden
         transform transition-all duration-300 ease-out border border-gray-700 border-b-0
         ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
       `}>
@@ -222,7 +222,7 @@ export default function SlideUpAddForm({
                   <button
                     key={level}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, difficulty: level as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, difficulty: level as 'سهل' | 'متوسط' | 'صعب' }))}
                     className={`p-3 rounded-xl border-2 transition-all font-medium ${
                       formData.difficulty === level
                         ? level === 'سهل' 

@@ -14,13 +14,13 @@ interface CardsViewProps {
   onDeleteWord: (id: number) => void;
 }
 
-export default function CardsView({ 
+const CardsView: React.FC<CardsViewProps> = ({ 
   words, 
   categories, 
   onWordClick, 
   onEditWord, 
   onDeleteWord 
-}: CardsViewProps) {
+}) => {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     category: 'الكل',
@@ -155,7 +155,7 @@ export default function CardsView({
               <label className="block text-sm font-medium text-gray-300 mb-2">الصعوبة</label>
               <select
                 value={filters.difficulty}
-                onChange={(e) => setFilters(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                onChange={(e) => setFilters(prev => ({ ...prev, difficulty: e.target.value as 'all' | 'سهل' | 'متوسط' | 'صعب' }))}
                 className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
               >
                 <option value="all">جميع المستويات</option>
@@ -169,7 +169,7 @@ export default function CardsView({
               <label className="block text-sm font-medium text-gray-300 mb-2">ترتيب حسب</label>
               <select
                 value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
+                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as 'newest' | 'oldest' | 'alphabetical' | 'difficulty' | 'nextReview' }))}
                 className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
               >
                 <option value="newest">الأحدث أولاً</option>
@@ -243,4 +243,6 @@ export default function CardsView({
       )}
     </div>
   );
-}
+};
+
+export default CardsView;

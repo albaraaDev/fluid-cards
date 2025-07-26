@@ -10,7 +10,7 @@ interface StudyViewProps {
   onUpdateProgress: (wordId: number, correct: boolean) => void;
 }
 
-export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
+const StudyView: React.FC<StudyViewProps> = ({ words, onUpdateProgress }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
@@ -153,7 +153,7 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
           <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl shadow-2xl p-8 flex flex-col justify-center items-center text-white border border-blue-500/30">
             <div className="text-center">
               <div className="flex items-center justify-center mb-6">
-                <div className={`w-3 h-3 rounded-full ${getDifficultyColor(currentWord.difficulty)} me-3`} />
+                <div className={`w-3 h-3 rounded-full ${getDifficultyColor(currentWord.difficulty)} mr-3`} />
                 <span className="text-blue-200 text-sm bg-white/20 px-3 py-1 rounded-full">
                   {currentWord.category}
                 </span>
@@ -162,7 +162,7 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
               <h3 className="text-4xl font-bold mb-6">{currentWord.word}</h3>
               
               <div className="flex items-center justify-center text-blue-200 mb-4">
-                <Brain size={20} className="me-2" />
+                <Brain size={20} className="mr-2" />
                 <span>انقر لرؤية المعنى</span>
               </div>
               
@@ -181,7 +181,7 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
               </p>
               
               {currentWord.note && (
-                <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600" dir='ltr'>
+                <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600">
                   <p className="text-gray-400 text-sm">
                     💡 {currentWord.note}
                   </p>
@@ -262,4 +262,6 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
       </div>
     </div>
   );
-}
+};
+
+export default StudyView;
