@@ -136,7 +136,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
       )}
 
       {/* Random Words Section */}
-      {stats.randomUnmastered.length > 0 && (
+      {/* {stats.randomUnmastered.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-800">كلمات للمراجعة</h3>
@@ -156,7 +156,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Empty State */}
       {stats.totalWords === 0 && (
