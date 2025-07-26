@@ -49,7 +49,7 @@ export default function BottomNavigation({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="bg-white/10 backdrop-blur-sm border-t border-gray-200/50 shadow-lg">
+      <div className="bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50 shadow-lg">
         <div className="max-w-sm mx-auto px-6 py-2">
           <div className="flex items-center justify-between relative">
             {/* Left tabs */}
@@ -64,8 +64,8 @@ export default function BottomNavigation({
                     onClick={() => onTabChange(tab.id)}
                     className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
                       isActive 
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-500 hover:text-gray-700 justify-center hover:bg-gray-50'
+                        ? 'text-blue-400 bg-blue-900/30' 
+                        : 'text-gray-400 hover:text-gray-300 justify-center hover:bg-gray-800/50'
                     }`}
                   >
                     <div className="relative">
@@ -82,24 +82,22 @@ export default function BottomNavigation({
                       )}
                     </div>
                     {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
-                      isActive ? 'opacity-100' : 'opacity-70'
-                    }`}>
-                      {tab.label}
-                    </span>}
+                      isActive ? 'text-blue-400' : 'text-gray-400'
+                    }`}>{tab.label}</span>}
                   </button>
                 );
               })}
             </div>
 
-            {/* Center Add Button */}
+            {/* Add Button */}
             <button
               onClick={onAddWord}
-              className="absolute left-1/2 cursor-pointer transform -translate-x-1/2 -translate-y-9 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 group"
+              className="relative z-10 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 group"
             >
-              <Plus 
-                size={36} 
-                className="transition-transform duration-200 group-hover:rotate-90" 
-              />
+              <Plus size={24} className="text-white group-hover:rotate-180 transition-transform duration-300" />
+              
+              {/* Ripple effect */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-purple-700 opacity-30 animate-ping"></div>
             </button>
 
             {/* Right tabs */}
@@ -114,8 +112,8 @@ export default function BottomNavigation({
                     onClick={() => onTabChange(tab.id)}
                     className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
                       isActive 
-                        ? 'text-blue-600 bg-blue-50' 
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 justify-center'
+                        ? 'text-blue-400 bg-blue-900/30' 
+                        : 'text-gray-400 hover:text-gray-300 justify-center hover:bg-gray-800/50'
                     }`}
                   >
                     <div className="relative">
@@ -132,10 +130,8 @@ export default function BottomNavigation({
                       )}
                     </div>
                     {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
-                      isActive ? 'opacity-100' : 'opacity-70'
-                    }`}>
-                      {tab.label}
-                    </span>}
+                      isActive ? 'text-blue-400' : 'text-gray-400'
+                    }`}>{tab.label}</span>}
                   </button>
                 );
               })}

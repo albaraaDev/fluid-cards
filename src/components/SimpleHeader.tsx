@@ -1,3 +1,4 @@
+// src/components/SimpleHeader.tsx
 'use client';
 
 import { Download, Settings, Upload } from 'lucide-react';
@@ -19,7 +20,7 @@ export default function SimpleHeader({
   onSettings,
 }: SimpleHeaderProps) {
   return (
-    <div className="bg-white border-b border-gray-200/50 sticky top-0 z-40">
+    <div className="bg-gray-900/95 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-40">
       <div className="max-w-2xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
@@ -27,12 +28,12 @@ export default function SimpleHeader({
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => onTabChange('home')}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <div className="w-6 h-6 bg-white rounded-md opacity-90"></div>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Fluid Cards</h1>
-              <p className="text-sm text-gray-500">بطاقات تعليمية ذكية</p>
+              <h1 className="text-xl font-bold text-white">Fluid Cards</h1>
+              <p className="text-sm text-gray-400">بطاقات تعليمية ذكية</p>
             </div>
           </div>
 
@@ -40,7 +41,7 @@ export default function SimpleHeader({
           <div className="flex items-center space-x-2">
             <button
               onClick={onExport}
-              className="p-2.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
+              className="p-2.5 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded-xl transition-all duration-200"
               title="تصدير البيانات"
             >
               <Download size={20} />
@@ -48,7 +49,7 @@ export default function SimpleHeader({
 
             <button
               onClick={onImport}
-              className="p-2.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
+              className="p-2.5 text-gray-400 hover:text-green-400 hover:bg-green-900/30 rounded-xl transition-all duration-200"
               title="استيراد البيانات"
             >
               <Upload size={20} />
@@ -57,7 +58,7 @@ export default function SimpleHeader({
             {onSettings && (
               <button
                 onClick={onSettings}
-                className="p-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-xl transition-all duration-200"
+                className="p-2.5 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-xl transition-all duration-200"
                 title="الإعدادات"
               >
                 <Settings size={20} />

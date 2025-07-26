@@ -1,12 +1,13 @@
 
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Cairo } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ 
-  subsets: ['latin'],
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
   display: 'swap',
-  variable: '--font-inter'
+  variable: '--font-cairo',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -117,7 +118,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ar" dir="rtl" className={inter.variable}>
+    <html lang="ar" dir="rtl" className={cairo.variable}>
       <head>
         {/* PWA Meta Tags */}
         <meta name="application-name" content="Fluid Cards" />
@@ -129,7 +130,6 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
         
         {/* Preload critical resources */}
-        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         
         {/* DNS prefetch for external domains */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -149,7 +149,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#1e40af" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
-      <body className={`${inter.className} font-sans antialiased`}>
+      <body className={`${cairo.className} font-sans antialiased`}>
         {/* Background Pattern */}
         <div className="fixed inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20" />

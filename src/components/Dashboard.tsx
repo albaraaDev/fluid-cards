@@ -4,7 +4,6 @@
 import { Word } from '@/types/flashcard';
 import { BookOpen, Clock, Target, TrendingUp } from 'lucide-react';
 import React, { useMemo } from 'react';
-import ModernWordCard from './ModernWordCard';
 
 interface DashboardProps {
   words: Word[];
@@ -13,7 +12,7 @@ interface DashboardProps {
   onDeleteWord: (id: number) => void;
 }
 
-export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord }: DashboardProps) {
+export default function Dashboard({ words }: DashboardProps) {
   // حساب الإحصائيات
   const stats = useMemo(() => {
     const totalWords = words.length;
@@ -43,36 +42,40 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
       value: stats.totalWords,
       icon: BookOpen,
       color: 'blue',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600',
-      iconColor: 'text-blue-500'
+      bgColor: 'bg-blue-900/30',
+      textColor: 'text-blue-400',
+      iconColor: 'text-blue-400',
+      borderColor: 'border-blue-800/50'
     },
     {
       title: 'كلمات محفوظة',
       value: stats.masteredWords,
       icon: Target,
       color: 'green',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600',
-      iconColor: 'text-green-500'
+      bgColor: 'bg-green-900/30',
+      textColor: 'text-green-400',
+      iconColor: 'text-green-400',
+      borderColor: 'border-green-800/50'
     },
     {
       title: 'تحتاج مراجعة',
       value: stats.wordsNeedingReview,
       icon: Clock,
       color: 'orange',
-      bgColor: 'bg-orange-50',
-      textColor: 'text-orange-600',
-      iconColor: 'text-orange-500'
+      bgColor: 'bg-orange-900/30',
+      textColor: 'text-orange-400',
+      iconColor: 'text-orange-400',
+      borderColor: 'border-orange-800/50'
     },
     {
       title: 'نسبة الإتقان',
       value: `${stats.progress.toFixed(0)}%`,
       icon: TrendingUp,
       color: 'purple',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600',
-      iconColor: 'text-purple-500'
+      bgColor: 'bg-purple-900/30',
+      textColor: 'text-purple-400',
+      iconColor: 'text-purple-400',
+      borderColor: 'border-purple-800/50'
     }
   ];
 
@@ -80,8 +83,8 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
     <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
       {/* Welcome Section */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">مرحباً بك</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-white mb-2">مرحباً بك</h2>
+        <p className="text-gray-400">
           {stats.totalWords === 0 
             ? 'ابدأ رحلتك التعليمية بإضافة أول كلمة!'
             : stats.wordsNeedingReview > 0 
@@ -92,11 +95,11 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className={`${stat.bgColor} rounded-2xl p-6 border border-gray-100`}>
+            <div key={index} className={`${stat.bgColor} rounded-2xl p-6 border ${stat.borderColor}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-2 ${stat.bgColor} rounded-xl`}>
                   <Icon size={20} className={stat.iconColor} />
@@ -105,7 +108,7 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
               <div className={`text-2xl font-bold ${stat.textColor} mb-1`}>
                 {stat.value}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-400">
                 {stat.title}
               </div>
             </div>
@@ -115,20 +118,20 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
 
       {/* Progress Bar */}
       {stats.totalWords > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-8">
+        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">التقدم العام</h3>
-            <span className="text-2xl font-bold text-purple-600">
+            <h3 className="text-lg font-semibold text-white">التقدم العام</h3>
+            <span className="text-2xl font-bold text-purple-400">
               {stats.progress.toFixed(0)}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-700 rounded-full h-3">
             <div 
               className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${stats.progress}%` }}
             />
           </div>
-          <div className="flex justify-between text-sm text-gray-600 mt-2">
+          <div className="flex justify-between text-sm text-gray-400 mt-2">
             <span>{stats.masteredWords} محفوظة</span>
             <span>{stats.totalWords} إجمالي</span>
           </div>
@@ -139,8 +142,8 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
       {/* {stats.randomUnmastered.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">كلمات للمراجعة</h3>
-            <span className="text-sm text-gray-500">اختيار عشوائي</span>
+            <h3 className="text-lg font-semibold text-white">كلمات للمراجعة</h3>
+            <span className="text-sm text-gray-400">اختيار عشوائي</span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -164,8 +167,8 @@ export default function Dashboard({ words, onWordClick, onEditWord, onDeleteWord
           <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-6 flex items-center justify-center">
             <BookOpen size={32} className="text-white" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">ابدأ رحلتك التعليمية</h3>
-          <p className="text-gray-600 mb-6">أضف أول كلمة واستمتع بتجربة التعلم الذكي</p>
+          <h3 className="text-xl font-semibold text-white mb-2">ابدأ رحلتك التعليمية</h3>
+          <p className="text-gray-400 mb-6">أضف أول كلمة واستمتع بتجربة التعلم الذكي</p>
           <div className="text-sm text-gray-500">
             استخدم زر + في الأسفل لإضافة كلمة جديدة
           </div>

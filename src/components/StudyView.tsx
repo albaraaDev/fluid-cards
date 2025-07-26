@@ -64,19 +64,33 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
         <div className="text-center py-16">
-          <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-blue-500 rounded-full mx-auto mb-6 flex items-center justify-center">
+          <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-blue-600 rounded-full mx-auto mb-6 flex items-center justify-center">
             <Target size={32} className="text-white" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">أحسنت! 🎉</h3>
-          <p className="text-gray-600 mb-6">
-            جميع كلماتك محدثة ولا تحتاج لمراجعة الآن
+          <h3 className="text-2xl font-bold text-white mb-4">أحسنت!</h3>
+          <p className="text-gray-400 mb-8 text-lg">
+            لا توجد كلمات تحتاج للمراجعة في الوقت الحالي
           </p>
-          <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
-            <div className="flex items-center justify-center space-x-2 text-green-700">
-              <CheckCircle size={20} />
-              <span className="font-medium">
-                ستظهر الكلمات هنا عندما تحتاج للمراجعة
-              </span>
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-blue-400 mb-1">
+                  {words.length}
+                </div>
+                <div className="text-gray-400 text-sm">إجمالي الكلمات</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-400 mb-1">
+                  {words.filter(w => w.correctCount >= 3).length}
+                </div>
+                <div className="text-gray-400 text-sm">كلمات محفوظة</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-400 mb-1">
+                  {words.length > 0 ? Math.round((words.filter(w => w.correctCount >= 3).length / words.length) * 100) : 0}%
+                </div>
+                <div className="text-gray-400 text-sm">نسبة الإتقان</div>
+              </div>
             </div>
           </div>
         </div>
@@ -86,53 +100,49 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
-      {/* Header مع الإحصائيات */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-xl">
-              <Brain size={24} className="text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">جلسة المراجعة</h2>
-              <p className="text-gray-600 text-sm">
-                {currentIndex + 1} من {wordsToStudy.length}
-              </p>
-            </div>
-          </div>
+      {/* Header with Stats */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">جلسة المراجعة</h2>
+          <p className="text-gray-400">
+            {currentIndex + 1} من {wordsToStudy.length}
+          </p>
+        </div>
 
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-green-900/30 px-3 py-2 rounded-xl border border-green-800/50">
+            <CheckCircle size={16} className="text-green-400" />
+            <span className="text-green-400 font-medium">{sessionStats.correct}</span>
+          </div>
+          <div className="flex items-center space-x-2 bg-red-900/30 px-3 py-2 rounded-xl border border-red-800/50">
+            <XCircle size={16} className="text-red-400" />
+            <span className="text-red-400 font-medium">{sessionStats.incorrect}</span>
+          </div>
           <button
             onClick={resetSession}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-            title="إعادة تشغيل الجلسة"
+            className="p-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors border border-gray-700"
           >
-            <RotateCcw size={20} />
+            <RotateCcw size={16} className="text-gray-400" />
           </button>
-        </div>
-
-        {/* شريط التقدم */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div 
-            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentIndex + 1) / wordsToStudy.length) * 100}%` }}
-          />
-        </div>
-
-        {/* إحصائيات الجلسة */}
-        <div className="flex items-center justify-center space-x-6 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full" />
-            <span className="text-gray-600">صحيح: {sessionStats.correct}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full" />
-            <span className="text-gray-600">خطأ: {sessionStats.incorrect}</span>
-          </div>
         </div>
       </div>
 
-      {/* البطاقة التفاعلية */}
-      <div className="relative w-full h-96 perspective-1000 mb-8">
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex justify-between text-sm text-gray-400 mb-2">
+          <span>التقدم</span>
+          <span>{Math.round(((currentIndex + 1) / wordsToStudy.length) * 100)}%</span>
+        </div>
+        <div className="w-full bg-gray-700 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${((currentIndex + 1) / wordsToStudy.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Flashcard */}
+      <div className="relative h-80 mb-8 perspective-1000">
         <div
           className={`relative w-full h-full transition-transform duration-700 preserve-3d cursor-pointer ${
             isFlipped ? 'rotate-y-180' : ''
@@ -140,95 +150,113 @@ export default function StudyView({ words, onUpdateProgress }: StudyViewProps) {
           onClick={() => setIsFlipped(!isFlipped)}
         >
           {/* الوجه الأمامي - الكلمة */}
-          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl shadow-2xl p-8 flex flex-col justify-center items-center text-white">
+          <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl shadow-2xl p-8 flex flex-col justify-center items-center text-white border border-blue-500/30">
             <div className="text-center">
-              {/* مؤشر الصعوبة */}
-              <div className="flex items-center justify-center space-x-3 mb-6">
-                <div className={`w-4 h-4 rounded-full ${getDifficultyColor(currentWord.difficulty)}`} />
-                <span className="text-blue-100 text-sm font-medium">
+              <div className="flex items-center justify-center mb-6">
+                <div className={`w-3 h-3 rounded-full ${getDifficultyColor(currentWord.difficulty)} me-3`} />
+                <span className="text-blue-200 text-sm bg-white/20 px-3 py-1 rounded-full">
                   {currentWord.category}
                 </span>
               </div>
-
+              
               <h3 className="text-4xl font-bold mb-6">{currentWord.word}</h3>
               
-              <div className="flex items-center justify-center space-x-2 text-blue-100 mb-4">
-                <Clock size={16} />
-                <span className="text-sm">انقر لرؤية المعنى</span>
+              <div className="flex items-center justify-center text-blue-200 mb-4">
+                <Brain size={20} className="me-2" />
+                <span>انقر لرؤية المعنى</span>
               </div>
-
-              {/* مؤشر الإتقان */}
-              <div className="flex items-center justify-center space-x-4 text-sm">
-                <span className="bg-white/20 px-3 py-1 rounded-full">
-                  ✓ {currentWord.correctCount}
-                </span>
-                <span className="bg-white/20 px-3 py-1 rounded-full">
-                  ✗ {currentWord.incorrectCount}
-                </span>
+              
+              <div className="text-sm text-blue-300">
+                المحاولات: {currentWord.correctCount} صحيح • {currentWord.incorrectCount} خطأ
               </div>
             </div>
           </div>
 
           {/* الوجه الخلفي - المعنى */}
-          <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-white rounded-3xl shadow-2xl p-8 border border-gray-200">
-            <div className="h-full flex flex-col justify-center">
-              <div className="text-center mb-8">
-                <h4 className="text-2xl font-bold text-gray-800 mb-4">{currentWord.word}</h4>
-                <p className="text-xl text-gray-900 mb-6 leading-relaxed">{currentWord.meaning}</p>
-                
-                {currentWord.note && (
-                  <div className="bg-gray-50 p-4 rounded-2xl mb-6">
-                    <p className="text-gray-700 italic">&quot;{currentWord.note}&quot;</p>
-                  </div>
-                )}
-
-                <div className="text-sm text-gray-500">
-                  مستوى الصعوبة: <span className="font-medium">{currentWord.difficulty}</span>
+          <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col justify-center border border-gray-700">
+            <div className="text-center mb-8">
+              <h4 className="text-2xl font-bold text-white mb-4">{currentWord.word}</h4>
+              <p className="text-xl text-gray-300 leading-relaxed mb-6">
+                {currentWord.meaning}
+              </p>
+              
+              {currentWord.note && (
+                <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600" dir='ltr'>
+                  <p className="text-gray-400 text-sm">
+                    💡 {currentWord.note}
+                  </p>
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* أزرار التقييم */}
-              <div className="flex gap-4">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAnswer(false);
-                  }}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105"
-                >
-                  <XCircle size={20} />
-                  <span>صعب</span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAnswer(true);
-                  }}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-4 rounded-2xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 hover:scale-105"
-                >
-                  <CheckCircle size={20} />
-                  <span>سهل</span>
-                </button>
-              </div>
+            {/* إجابة مع إيقاف event propagation */}
+            <div className="grid grid-cols-2 gap-4" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => handleAnswer(false)}
+                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-semibold transition-all hover:scale-105"
+              >
+                <XCircle size={20} />
+                <span>صعب</span>
+              </button>
+              <button
+                onClick={() => handleAnswer(true)}
+                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-semibold transition-all hover:scale-105"
+              >
+                <CheckCircle size={20} />
+                <span>سهل</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* نصائح للمستخدم */}
-      <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-        <div className="flex items-start space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Brain size={16} className="text-blue-600" />
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => setIsFlipped(!isFlipped)}
+          className="flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 text-gray-300 py-4 rounded-2xl font-medium transition-all border border-gray-700"
+        >
+          <RotateCcw size={20} />
+          <span>{isFlipped ? 'إخفاء المعنى' : 'إظهار المعنى'}</span>
+        </button>
+        
+        <button
+          onClick={() => {
+            if (currentIndex < wordsToStudy.length - 1) {
+              setCurrentIndex(prev => prev + 1);
+              setIsFlipped(false);
+            }
+          }}
+          disabled={currentIndex >= wordsToStudy.length - 1}
+          className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white py-4 rounded-2xl font-medium transition-all"
+        >
+          <Clock size={20} />
+          <span>تخطي</span>
+        </button>
+      </div>
+
+      {/* Session Summary */}
+      <div className="mt-8 bg-gray-800 rounded-2xl p-6 border border-gray-700">
+        <h4 className="text-lg font-semibold text-white mb-4">ملخص الجلسة</h4>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-2xl font-bold text-gray-300 mb-1">
+              {sessionStats.correct + sessionStats.incorrect}
+            </div>
+            <div className="text-gray-400 text-sm">كلمات مراجعة</div>
           </div>
-          <div className="flex-1">
-            <h4 className="font-semibold text-blue-800 mb-2">نصائح المراجعة</h4>
-            <ul className="text-blue-700 text-sm space-y-1">
-              <li>• انقر على البطاقة لرؤية المعنى</li>
-              <li>• اختر &quot;سهل&quot; إذا تذكرت المعنى بسهولة</li>
-              <li>• اختر &quot;صعب&quot; إذا احتجت للتفكير أو أخطأت</li>
-              <li>• الكلمات الصعبة ستظهر أكثر في المراجعات</li>
-            </ul>
+          <div>
+            <div className="text-2xl font-bold text-green-400 mb-1">
+              {sessionStats.correct}
+            </div>
+            <div className="text-gray-400 text-sm">إجابات صحيحة</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-400 mb-1">
+              {sessionStats.correct + sessionStats.incorrect > 0 ? 
+                Math.round((sessionStats.correct / (sessionStats.correct + sessionStats.incorrect)) * 100) : 0}%
+            </div>
+            <div className="text-gray-400 text-sm">معدل النجاح</div>
           </div>
         </div>
       </div>

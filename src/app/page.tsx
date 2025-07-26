@@ -91,12 +91,7 @@ export default function FlashcardApp() {
   }, [words]);
 
   // إضافة كلمة جديدة
-  const handleAddWord = (
-    newWordData: Omit<
-      Word,
-      'id' | 'lastReviewed' | 'correctCount' | 'incorrectCount' | 'nextReview'
-    >
-  ) => {
+  const handleAddWord = (newWordData: Omit<Word, 'id' | 'lastReviewed' | 'correctCount' | 'incorrectCount' | 'nextReview'>) => {
     const newWord: Word = {
       ...newWordData,
       id: Date.now(),
@@ -106,56 +101,42 @@ export default function FlashcardApp() {
       nextReview: Date.now(),
     };
 
-    setWords((prev) => [newWord, ...prev]);
+    setWords(prev => [...prev, newWord]);
   };
 
   // إضافة تصنيف جديد
   const handleAddCategory = (newCategory: string) => {
-    if (!categories.includes(newCategory)) {
-      setCategories((prev) => [...prev, newCategory]);
-    }
+    setCategories(prev => [...prev, newCategory]);
+  };
+
+  // حذف كلمة
+  const handleDeleteWord = (id: number) => {
+    setWords(prev => prev.filter(word => word.id !== id));
   };
 
   // تحديث تقدم الكلمة
   const handleUpdateProgress = (wordId: number, correct: boolean) => {
-    setWords((prev) =>
-      prev.map((word) => {
-        if (word.id === wordId) {
-          const correctCount = correct
-            ? word.correctCount + 1
-            : word.correctCount;
-          const incorrectCount = correct
-            ? word.incorrectCount
-            : word.incorrectCount + 1;
+    setWords(prev => prev.map(word => {
+      if (word.id !== wordId) return word;
 
-          // حساب الفترة التالية للمراجعة (خوارزمية تكرار متباعد بسيطة)
-          const multiplier = correct ? Math.pow(2, correctCount) : 0.5;
-          const nextReview = Date.now() + multiplier * 24 * 60 * 60 * 1000; // بالأيام
+      const nextReviewDelay = correct ? 
+        Math.min(24 * 60 * 60 * 1000 * Math.pow(2, word.correctCount), 30 * 24 * 60 * 60 * 1000) :
+        60 * 60 * 1000;
 
-          return {
-            ...word,
-            correctCount,
-            incorrectCount,
-            lastReviewed: Date.now(),
-            nextReview,
-          };
-        }
-        return word;
-      })
-    );
+      return {
+        ...word,
+        correctCount: correct ? word.correctCount + 1 : word.correctCount,
+        incorrectCount: correct ? word.incorrectCount : word.incorrectCount + 1,
+        lastReviewed: Date.now(),
+        nextReview: Date.now() + nextReviewDelay,
+      };
+    }));
   };
 
-  // حذف كلمة
-  const handleDeleteWord = (wordId: number) => {
-    if (confirm('هل أنت متأكد من حذف هذه الكلمة؟')) {
-      setWords((prev) => prev.filter((word) => word.id !== wordId));
-    }
-  };
-
-  // تعديل كلمة
+  // تحديث كلمة
   const handleEditWord = (updatedWord: Word) => {
-    setWords((prev) =>
-      prev.map((word) => (word.id === updatedWord.id ? updatedWord : word))
+    setWords(prev => 
+      prev.map(word => word.id === updatedWord.id ? updatedWord : word)
     );
     setEditingWord(null);
   };
@@ -262,100 +243,64 @@ export default function FlashcardApp() {
       case 'stats':
         return (
           <div className="max-w-2xl mx-auto px-4 py-6 pb-32">
-            <div className="bg-white rounded-3xl p-8 border border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8">
+            <div className="bg-gray-800 rounded-3xl p-8 border border-gray-700">
+              <h2 className="text-2xl font-bold text-white mb-8">
                 الإحصائيات التفصيلية
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="text-center p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                <div className="text-center p-6 bg-blue-900/30 rounded-2xl border border-blue-800/50">
+                  <div className="text-3xl font-bold text-blue-400 mb-2">
                     {stats.totalWords}
                   </div>
-                  <div className="text-gray-600">إجمالي الكلمات</div>
+                  <div className="text-gray-300">إجمالي الكلمات</div>
                 </div>
 
-                <div className="text-center p-6 bg-green-50 rounded-2xl border border-green-100">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
+                <div className="text-center p-6 bg-green-900/30 rounded-2xl border border-green-800/50">
+                  <div className="text-3xl font-bold text-green-400 mb-2">
                     {stats.masteredWords}
                   </div>
-                  <div className="text-gray-600">كلمات محفوظة</div>
+                  <div className="text-gray-300">كلمات محفوظة</div>
                 </div>
 
-                <div className="text-center p-6 bg-orange-50 rounded-2xl border border-orange-100">
-                  <div className="text-3xl font-bold text-orange-600 mb-2">
+                <div className="text-center p-6 bg-orange-900/30 rounded-2xl border border-orange-800/50">
+                  <div className="text-3xl font-bold text-orange-400 mb-2">
                     {stats.wordsNeedingReview}
                   </div>
-                  <div className="text-gray-600">تحتاج مراجعة</div>
+                  <div className="text-gray-300">تحتاج مراجعة</div>
                 </div>
 
-                <div className="text-center p-6 bg-purple-50 rounded-2xl border border-purple-100">
-                  <div className="text-3xl font-bold text-purple-600 mb-2">
+                <div className="text-center p-6 bg-purple-900/30 rounded-2xl border border-purple-800/50">
+                  <div className="text-3xl font-bold text-purple-400 mb-2">
                     {stats.progress.toFixed(0)}%
                   </div>
-                  <div className="text-gray-600">نسبة الإتقان</div>
+                  <div className="text-gray-300">نسبة الإتقان</div>
                 </div>
               </div>
 
-              {/* شريط التقدم */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    التقدم العام
-                  </h3>
-                  <span className="text-2xl font-bold text-purple-600">
-                    {stats.progress.toFixed(0)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
-                  <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-full transition-all duration-1000"
-                    style={{ width: `${stats.progress}%` }}
-                  />
-                </div>
-                <div className="text-sm text-gray-600 mt-2 text-center">
-                  {stats.masteredWords} من {stats.totalWords} كلمات محفوظة
-                </div>
-              </div>
-
-              {/* إحصائيات التصنيفات */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  توزيع التصنيفات
+              <div className="bg-gray-700/50 rounded-2xl p-6 border border-gray-600">
+                <h3 className="text-lg font-semibold text-white mb-4">
+                  توزيع الكلمات حسب التصنيف
                 </h3>
                 <div className="space-y-3">
-                  {categories.map((category) => {
-                    const categoryWords = words.filter(
-                      (w) => w.category === category
-                    );
-                    const categoryMastered = categoryWords.filter(
-                      (w) => w.correctCount >= 3
-                    ).length;
-                    const categoryProgress =
-                      categoryWords.length > 0
-                        ? (categoryMastered / categoryWords.length) * 100
-                        : 0;
-
+                  {categories.map(category => {
+                    const categoryWords = words.filter(w => w.category === category);
+                    const percentage = stats.totalWords > 0 ? 
+                      (categoryWords.length / stats.totalWords) * 100 : 0;
+                    
                     return (
-                      <div
-                        key={category}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-800">
-                              {category}
-                            </span>
-                            <span className="text-sm text-gray-600">
-                              {categoryMastered}/{categoryWords.length}
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-gradient-to-r from-blue-400 to-purple-500 h-2 rounded-full transition-all"
-                              style={{ width: `${categoryProgress}%` }}
+                      <div key={category} className="flex items-center justify-between">
+                        <span className="text-gray-300">{category}</span>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-24 bg-gray-600 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
+                              style={{ width: `${percentage}%` }}
                             />
                           </div>
+                          <span className="text-sm text-gray-400 w-12 text-right">
+                            {categoryWords.length}
+                          </span>
                         </div>
                       </div>
                     );
@@ -372,16 +317,16 @@ export default function FlashcardApp() {
   };
 
   return (
-    <div className="max-h-screen overflow-hidden bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Header */}
       <SimpleHeader
-        onExport={handleExport}
         onTabChange={setCurrentTab}
+        onExport={handleExport}
         onImport={() => setShowImportModal(true)}
       />
 
       {/* Main Content */}
-      <main className="h-[calc(100vh-75px)] overflow-auto">
+      <main>
         {renderContent()}
       </main>
 
@@ -393,7 +338,7 @@ export default function FlashcardApp() {
         wordsNeedingReview={stats.wordsNeedingReview}
       />
 
-      {/* Slide-up Add Form */}
+      {/* Add Word Form */}
       <SlideUpAddForm
         isOpen={showAddForm}
         onClose={() => setShowAddForm(false)}
@@ -401,14 +346,6 @@ export default function FlashcardApp() {
         onAddWord={handleAddWord}
         onAddCategory={handleAddCategory}
       />
-
-      {/* Word Details Modal */}
-      {selectedWord && (
-        <WordDetailsModal
-          word={selectedWord}
-          onClose={() => setSelectedWord(null)}
-        />
-      )}
 
       {/* Edit Word Modal */}
       {editingWord && (
@@ -421,15 +358,23 @@ export default function FlashcardApp() {
         />
       )}
 
+      {/* Word Details Modal */}
+      {selectedWord && (
+        <WordDetailsModal
+          word={selectedWord}
+          onClose={() => setSelectedWord(null)}
+        />
+      )}
+
       {/* Import Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-3xl p-6 max-w-md w-full border border-gray-700">
             <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              <h3 className="text-lg font-semibold text-white mb-2">
                 استيراد البيانات
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-400 text-sm">
                 اختر ملف JSON الذي تم تصديره مسبقاً
               </p>
             </div>
@@ -443,14 +388,14 @@ export default function FlashcardApp() {
             />
             <label
               htmlFor="import-file"
-              className="block w-full text-center bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 rounded-2xl font-semibold cursor-pointer transition-all mb-4"
+              className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white py-4 rounded-2xl font-semibold cursor-pointer transition-all mb-4"
             >
               اختيار ملف
             </label>
 
             <button
               onClick={() => setShowImportModal(false)}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-2xl font-semibold transition-all"
+              className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 py-4 rounded-2xl font-semibold transition-all"
             >
               إلغاء
             </button>

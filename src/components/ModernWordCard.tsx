@@ -38,10 +38,10 @@ export default function ModernWordCard({
       <div
         onClick={onClick}
         className={`
-          bg-white rounded-2xl border border-gray-100 p-6 cursor-pointer
-          transition-all duration-200 hover:shadow-lg hover:scale-[1.02]
+          bg-gray-800 rounded-2xl border border-gray-700 cursor-pointer
+          transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-gray-600
           ${compact ? 'p-4' : 'p-6'}
-          ${isMastered ? 'ring-2 ring-green-200 bg-green-50/30' : ''}
+          ${isMastered ? 'ring-2 ring-green-500/30 bg-green-900/10' : ''}
         `}
       >
         {/* Header with Difficulty Indicator */}
@@ -51,7 +51,7 @@ export default function ModernWordCard({
             <div className={`w-3 h-3 rounded-full ${getDifficultyColor(word.difficulty)}`} />
             
             {/* Category */}
-            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">
+            <span className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded-full font-medium">
               {word.category}
             </span>
             
@@ -59,7 +59,7 @@ export default function ModernWordCard({
             {isMastered && (
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs text-green-600 font-medium">محفوظة</span>
+                <span className="text-xs text-green-400 font-medium">محفوظة</span>
               </div>
             )}
           </div>
@@ -71,7 +71,7 @@ export default function ModernWordCard({
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-300 hover:bg-gray-700 rounded-lg transition-colors"
             >
               <MoreVertical size={16} />
             </button>
@@ -83,14 +83,14 @@ export default function ModernWordCard({
                   className="fixed inset-0 z-10" 
                   onClick={() => setShowMenu(false)}
                 />
-                <div className="absolute left-0 top-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-20">
+                <div className="absolute left-0 top-0 mt-1 w-36 bg-gray-800 rounded-xl shadow-lg border border-gray-700 py-2 z-20">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onEdit();
                       setShowMenu(false);
                     }}
-                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
                   >
                     <Edit size={14} />
                     <span>تعديل</span>
@@ -101,7 +101,7 @@ export default function ModernWordCard({
                       onDelete();
                       setShowMenu(false);
                     }}
-                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-red-900/20 transition-colors"
                   >
                     <Trash2 size={14} />
                     <span>حذف</span>
@@ -114,41 +114,47 @@ export default function ModernWordCard({
 
         {/* Word Content */}
         <div className="space-y-3">
-          <h3 className={`font-bold text-gray-900 ${compact ? 'text-lg' : 'text-xl'}`}>
+          <h3 className={`font-bold text-white ${compact ? 'text-lg' : 'text-xl'}`} dir='ltr'>
             {word.word}
           </h3>
           
-          <p className={`text-gray-700 leading-relaxed line-clamp-1 ${compact ? 'text-sm' : 'text-base'}`}>
+          <p className={`text-gray-300 ${compact ? 'text-sm' : 'text-base'} line-clamp-1 leading-relaxed`}>
             {word.meaning}
           </p>
+          
+          {word.note && !compact && (
+            <p className="text-gray-400 text-sm bg-gray-700/50 rounded-lg p-3 border border-gray-600 h-[66px] line-clamp-2" dir='ltr'>
+              💡 {word.note}
+            </p>
+          )}
         </div>
 
-        {/* Footer - Progress Indicator */}
-        {!compact && (
-          <div className="mt-6 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-4">
-                <span className="text-green-600 font-medium">
-                  ✓ {word.correctCount}
-                </span>
-                <span className="text-red-600 font-medium">
-                  ✗ {word.incorrectCount}
-                </span>
-              </div>
-              
-              <div className="text-gray-500">
-                {word.correctCount + word.incorrectCount > 0 
-                  ? `${Math.round((word.correctCount / (word.correctCount + word.incorrectCount)) * 100)}%`
-                  : 'جديدة'
-                }
-              </div>
+        {/* Progress Indicators */}
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700">
+          <div className="flex items-center space-x-4">
+            {/* Success Count */}
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              <span className="text-xs text-gray-400">{word.correctCount}</span>
+            </div>
+            
+            {/* Failure Count */}
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-red-500 rounded-full" />
+              <span className="text-xs text-gray-400">{word.incorrectCount}</span>
             </div>
           </div>
-        )}
 
-        {/* Click Indicator */}
-        <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+          {/* Next Review */}
+          <div className="text-xs text-gray-400">
+            {word.nextReview <= Date.now() ? (
+              <span className="text-orange-400 font-medium">للمراجعة</span>
+            ) : (
+              <span>
+                {Math.ceil((word.nextReview - Date.now()) / (24 * 60 * 60 * 1000))} يوم
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
