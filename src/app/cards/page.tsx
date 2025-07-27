@@ -1,105 +1,69 @@
-// src/app/cards/page.tsx - تحديث لدعم نظام المجلدات
+// src/app/cards/page.tsx
 'use client';
 
 import EditWordModal from '@/components/EditWordModal';
 import WordDetailsModal from '@/components/WordDetailsModal';
 import { useApp } from '@/context/AppContext';
-import { DifficultyFilter, FilterState, SortBy, ViewMode, Word } from '@/types/flashcard';
+import { DifficultyFilter, SortBy, ViewMode, Word } from '@/types/flashcard';
 import {
-  CheckCircle,
-  Clock,
+  ChevronDown,
   Edit,
   Filter,
   Grid,
   List,
   Search,
-  Star,
+  SlidersHorizontal,
   Trash2,
+  X
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 export default function CardsPage() {
-  const { 
-    words, 
-    folders, 
-    updateWord, 
-    deleteWord, 
-    addFolder, 
-  } = useApp();
+  const { words, categories, updateWord, deleteWord, addCategory } = useApp();
   
+  // UI State
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
   
-  // حالة الفلترة المحدثة للمجلدات
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    folderId: 'all', // 🔄 تغيير من category إلى folderId
-    difficulty: 'all',
-    sortBy: 'newest',
-    showMastered: true,
-    showNeedReview: true,
-  });
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('الكل');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyFilter>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('newest');
 
   // فلترة وترتيب الكلمات
   const filteredAndSortedWords = useMemo(() => {
-    let filtered = [...words];
-
-    // فلترة حسب البحث
-    if (filters.search) {
-      const searchTerm = filters.search.toLowerCase();
-      filtered = filtered.filter(word => 
-        word.word.toLowerCase().includes(searchTerm) ||
-        word.meaning.toLowerCase().includes(searchTerm) ||
-        (word.note && word.note.toLowerCase().includes(searchTerm)) ||
-        (word.tags && word.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
-      );
-    }
-
-    // فلترة حسب المجلد
-    if (filters.folderId !== 'all') {
-      filtered = filtered.filter(word => word.folderId === filters.folderId);
-    }
-
-    // فلترة حسب الصعوبة
-    if (filters.difficulty !== 'all') {
-      filtered = filtered.filter(word => word.difficulty === filters.difficulty);
-    }
-
-    // فلترة حسب الحالة
-    if (!filters.showMastered) {
-      filtered = filtered.filter(word => word.correctCount < 3);
-    }
-    if (!filters.showNeedReview) {
-      filtered = filtered.filter(word => word.nextReview > Date.now());
-    }
+    const filtered = words.filter(word => {
+      const matchesSearch = word.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'الكل' || word.category === selectedCategory;
+      const matchesDifficulty = selectedDifficulty === 'all' || word.difficulty === selectedDifficulty;
+      
+      return matchesSearch && matchesCategory && matchesDifficulty;
+    });
 
     // الترتيب
     filtered.sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'newest':
-          return b.id - a.id;
-        case 'oldest':
-          return a.id - b.id;
+      switch (sortBy) {
         case 'alphabetical':
-          return a.word.localeCompare(b.word);
+          return a.word.localeCompare(b.word, 'ar');
         case 'difficulty':
           const difficultyOrder = { 'سهل': 1, 'متوسط': 2, 'صعب': 3 };
           return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
         case 'nextReview':
           return a.nextReview - b.nextReview;
-        case 'folder':
-          const folderA = folders.find(f => f.id === a.folderId)?.name || '';
-          const folderB = folders.find(f => f.id === b.folderId)?.name || '';
-          return folderA.localeCompare(folderB, 'ar');
+        case 'oldest':
+          return a.id - b.id;
+        case 'newest':
         default:
-          return 0;
+          return b.id - a.id;
       }
     });
 
     return filtered;
-  }, [words, filters, folders]);
+  }, [words, searchTerm, selectedCategory, selectedDifficulty, sortBy]);
 
   // إحصائيات مفلترة
   const filteredStats = useMemo(() => {
@@ -110,194 +74,98 @@ export default function CardsPage() {
     return { total, mastered, needReview };
   }, [filteredAndSortedWords]);
 
-  // إعادة تعيين الفلاتر
-  const resetFilters = () => {
-    setFilters({
-      search: '',
-      folderId: 'all',
-      difficulty: 'all',
-      sortBy: 'newest',
-      showMastered: true,
-      showNeedReview: true,
-    });
-    setShowFilters(false);
+  // معالج حذف كلمة
+  const handleDeleteWord = (wordId: number) => {
+    if (confirm('هل أنت متأكد من حذف هذه الكلمة؟')) {
+      deleteWord(wordId);
+    }
   };
 
-  // مكون بطاقة الكلمة المحدث
+  // إعادة تعيين الفلاتر
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('الكل');
+    setSelectedDifficulty('all');
+    setSortBy('newest');
+  };
+
+  // مكون البطاقة
   const WordCard: React.FC<{ word: Word; compact?: boolean }> = ({ word, compact = false }) => {
     const isMastered = word.correctCount >= 3;
     const needsReview = word.nextReview <= Date.now();
-    const folder = folders.find(f => f.id === word.folderId);
-
-    const difficultyColors = {
-      'سهل': 'text-green-400 bg-green-900/30 border-green-800/50',
-      'متوسط': 'text-yellow-400 bg-yellow-900/30 border-yellow-800/50',
-      'صعب': 'text-red-400 bg-red-900/30 border-red-800/50'
-    };
-
-    if (compact) {
-      return (
-        <div 
-          className="bg-gray-800 border border-gray-700 rounded-xl p-4 hover:border-gray-600 transition-all cursor-pointer group"
-          onClick={() => setSelectedWord(word)}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-2">
-                <h3 className="font-semibold text-white truncate">{word.word}</h3>
-                {isMastered && <Star size={14} className="text-yellow-400 shrink-0" />}
-              </div>
-              
-              <p className="text-gray-300 text-sm truncate mb-3">{word.meaning}</p>
-              
-              <div className="flex items-center space-x-4 text-xs">
-                {/* المجلد */}
-                {folder && (
-                  <div className="flex items-center space-x-1">
-                    <div 
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: folder.color }}
-                    />
-                    <span className="text-gray-400">{folder.name}</span>
-                  </div>
-                )}
-                
-                {/* الصعوبة */}
-                <span className={`px-2 py-1 rounded text-xs border ${difficultyColors[word.difficulty]}`}>
-                  {word.difficulty}
-                </span>
-                
-                {/* الحالة */}
-                {isMastered && <span className="text-green-400 text-xs">✓ محفوظة</span>}
-                {needsReview && !isMastered && <span className="text-orange-400 text-xs">⏰ للمراجعة</span>}
-              </div>
-            </div>
-
-            {/* قائمة الإجراءات */}
-            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingWord(word);
-                }}
-                className="p-2 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-lg transition-colors"
-                title="تحرير"
-              >
-                <Edit size={14} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('هل أنت متأكد من حذف هذه الكلمة؟')) {
-                    deleteWord(word.id);
-                  }
-                }}
-                className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
-                title="حذف"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
 
     return (
-      <div 
-        className="bg-gray-800 border border-gray-700 rounded-2xl p-6 hover:border-gray-600 hover:scale-105 transition-all duration-200 cursor-pointer group relative"
+      <div
         onClick={() => setSelectedWord(word)}
+        className={`
+          bg-gray-800 rounded-2xl border border-gray-700 cursor-pointer group
+          transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-gray-600
+          ${compact ? 'p-4' : 'p-6'}
+          ${isMastered ? 'ring-2 ring-green-500/20 bg-green-900/10' : ''}
+          ${needsReview ? 'ring-2 ring-orange-500/20 bg-orange-900/10' : ''}
+          touch-manipulation
+        `}
       >
-        {/* Status Badge */}
-        <div className="absolute top-4 left-4">
-          {isMastered ? (
-            <div className="flex items-center space-x-1 text-green-400 bg-green-900/30 px-2 py-1 rounded-full text-xs">
-              <CheckCircle size={12} />
-              <span>محفوظة</span>
-            </div>
-          ) : needsReview ? (
-            <div className="flex items-center space-x-1 text-orange-400 bg-orange-900/30 px-2 py-1 rounded-full text-xs">
-              <Clock size={12} />
-              <span>للمراجعة</span>
-            </div>
-          ) : null}
-        </div>
-
-        {/* Content */}
-        <div className="pt-8">
-          <h3 className="text-xl font-bold text-white mb-3 truncate">{word.word}</h3>
-          <p className="text-gray-300 mb-4 line-clamp-2 leading-relaxed">{word.meaning}</p>
-          
-          {/* Tags */}
-          {word.tags && word.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-4">
-              {word.tags.slice(0, 3).map((tag, index) => (
-                <span key={index} className="text-xs bg-blue-900/30 text-blue-400 px-2 py-1 rounded-full">
-                  {tag}
-                </span>
-              ))}
-              {word.tags.length > 3 && (
-                <span className="text-xs text-gray-400">+{word.tags.length - 3}</span>
-              )}
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              {/* المجلد */}
-              {folder && (
-                <div className="flex items-center space-x-2">
-                  <div 
-                    className="w-4 h-4 rounded flex items-center justify-center text-xs"
-                    style={{ backgroundColor: `${folder.color}40` }}
-                  >
-                    {folder.icon}
-                  </div>
-                  <span className="text-sm text-gray-400">{folder.name}</span>
-                </div>
-              )}
-            </div>
-
-            {/* الصعوبة */}
-            <span className={`px-3 py-1 rounded-full text-sm border ${difficultyColors[word.difficulty]}`}>
-              {word.difficulty}
-            </span>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg lg:text-xl font-bold text-white group-hover:text-blue-400 transition-colors mb-2">
+              {word.word}
+            </h3>
+            <p className="text-gray-400 text-sm lg:text-base line-clamp-2">
+              {word.meaning}
+            </p>
           </div>
-        </div>
 
-        {/* Actions Menu */}
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center space-x-1">
+          {/* Actions */}
+          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setEditingWord(word);
               }}
-              className="p-2 bg-gray-700/80 hover:bg-blue-600 text-gray-300 hover:text-white rounded-lg transition-colors"
-              title="تحرير"
+              className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded-lg transition-all touch-manipulation"
             >
-              <Edit size={14} />
+              <Edit size={16} />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm('هل أنت متأكد من حذف هذه الكلمة؟')) {
-                  deleteWord(word.id);
-                }
+                handleDeleteWord(word.id);
               }}
-              className="p-2 bg-gray-700/80 hover:bg-red-600 text-gray-300 hover:text-white rounded-lg transition-colors"
-              title="حذف"
+              className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-all touch-manipulation"
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} />
             </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between">
+          {/* Difficulty Badge */}
+          <span className={`
+            text-xs lg:text-sm px-3 py-1 rounded-full font-medium
+            ${word.difficulty === 'سهل' ? 'bg-green-900/30 text-green-400 border border-green-800/50' :
+              word.difficulty === 'متوسط' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50' :
+              'bg-red-900/30 text-red-400 border border-red-800/50'
+            }
+          `}>
+            {word.difficulty}
+          </span>
+
+          {/* Status & Category */}
+          <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
+            {isMastered && <span className="text-green-400">✓ محفوظة</span>}
+            {needsReview && !isMastered && <span className="text-orange-400">⏰ للمراجعة</span>}
+            <span>•</span>
+            <span>{word.category}</span>
           </div>
         </div>
 
         {/* Note Preview */}
         {word.note && (
           <div className="mt-3 p-2 bg-gray-700/50 rounded-lg">
-            <p className="text-xs text-gray-400 line-clamp-1">
+            <p className="text-xs lg:text-sm text-gray-400 line-clamp-1">
               📝 {word.note}
             </p>
           </div>
@@ -350,119 +218,107 @@ export default function CardsPage() {
             className={`p-3 rounded-xl transition-all border touch-manipulation ${
               showFilters 
                 ? 'bg-blue-900/30 text-blue-400 border-blue-800/50' 
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300 hover:border-gray-600'
+                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300'
             }`}
           >
-            <Filter size={18} />
+            <SlidersHorizontal size={18} />
           </button>
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <input
+          type="text"
+          placeholder="البحث في الكلمات والمعاني..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-gray-800 border border-gray-700 rounded-2xl py-4 px-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg touch-manipulation"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 p-1 touch-manipulation"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 mb-6 space-y-6">
+        <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 mb-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">فلاتر البحث</h3>
+            <h3 className="text-lg font-semibold text-white">الفلاتر</h3>
             <button
               onClick={resetFilters}
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+              className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors touch-manipulation"
             >
               إعادة تعيين
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* البحث */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">البحث</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">التصنيف</label>
               <div className="relative">
-                <Search size={18} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  placeholder="ابحث في الكلمات..."
-                  className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 pr-10 pl-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+                >
+                  <option value="الكل">جميع التصنيفات</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               </div>
             </div>
 
-            {/* المجلد */}
+            {/* Difficulty Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">المجلد</label>
-              <select
-                value={filters.folderId}
-                onChange={(e) => setFilters(prev => ({ ...prev, folderId: e.target.value }))}
-                className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <option value="all">جميع المجلدات</option>
-                {folders.map(folder => (
-                  <option key={folder.id} value={folder.id}>
-                    {folder.icon} {folder.name}
-                  </option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-300 mb-2">مستوى الصعوبة</label>
+              <div className="relative">
+                <select
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyFilter)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+                >
+                  <option value="all">جميع المستويات</option>
+                  <option value="سهل">سهل</option>
+                  <option value="متوسط">متوسط</option>
+                  <option value="صعب">صعب</option>
+                </select>
+                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              </div>
             </div>
 
-            {/* الصعوبة */}
+            {/* Sort Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">الصعوبة</label>
-              <select
-                value={filters.difficulty}
-                onChange={(e) => setFilters(prev => ({ ...prev, difficulty: e.target.value as DifficultyFilter }))}
-                className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <option value="all">جميع المستويات</option>
-                <option value="سهل">سهل</option>
-                <option value="متوسط">متوسط</option>
-                <option value="صعب">صعب</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-300 mb-2">الترتيب</label>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+                >
+                  <option value="newest">الأحدث أولاً</option>
+                  <option value="oldest">الأقدم أولاً</option>
+                  <option value="alphabetical">أبجدياً</option>
+                  <option value="difficulty">حسب الصعوبة</option>
+                  <option value="nextReview">موعد المراجعة</option>
+                </select>
+                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              </div>
             </div>
-
-            {/* الترتيب */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">ترتيب حسب</label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as SortBy }))}
-                className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              >
-                <option value="newest">الأحدث</option>
-                <option value="oldest">الأقدم</option>
-                <option value="alphabetical">أبجدي</option>
-                <option value="difficulty">الصعوبة</option>
-                <option value="nextReview">موعد المراجعة</option>
-                <option value="folder">المجلد</option>
-              </select>
-            </div>
-          </div>
-
-          {/* خيارات إضافية */}
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.showMastered}
-                onChange={(e) => setFilters(prev => ({ ...prev, showMastered: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-300">عرض الكلمات المحفوظة</span>
-            </label>
-            
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.showNeedReview}
-                onChange={(e) => setFilters(prev => ({ ...prev, showNeedReview: e.target.checked }))}
-                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-              />
-              <span className="text-gray-300">عرض الكلمات التي تحتاج مراجعة</span>
-            </label>
           </div>
         </div>
       )}
 
-      {/* Words Grid/List */}
+      {/* Cards Grid/List */}
       {filteredAndSortedWords.length > 0 ? (
         <div className={
           viewMode === 'grid' 
@@ -510,13 +366,13 @@ export default function CardsPage() {
       {editingWord && (
         <EditWordModal
           word={editingWord}
-          categories={folders} // 🔄 تمرير المجلدات بدلاً من التصنيفات
+          categories={categories}
           onSave={(updatedWord) => {
             updateWord(updatedWord);
             setEditingWord(null);
           }}
           onCancel={() => setEditingWord(null)}
-          onAddCategory={addFolder} // 🔄 استخدام addFolder
+          onAddCategory={addCategory}
         />
       )}
     </div>
