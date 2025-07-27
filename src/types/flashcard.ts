@@ -1,30 +1,16 @@
 // src/types/flashcard.ts
 
-export interface Folder {
-  id: string;              // uuid للمجلد
-  name: string;            // اسم المجلد
-  color: string;           // #3B82F6 - لون المجلد
-  icon: string;            // 📚 أو اسم أيقونة lucide
-  parentId?: string;       // للمجلدات الفرعية (undefined = مجلد رئيسي)
-  createdAt: number;       // تاريخ الإنشاء
-  updatedAt: number;       // تاريخ آخر تحديث
-  description?: string;    // وصف اختياري للمجلد
-  wordCount?: number;      // عدد الكلمات (محسوب ديناميكياً)
-  isDefault?: boolean;     // هل هو مجلد افتراضي (غير قابل للحذف)
-}
-
 export interface Word {
   id: number;
   word: string;
   meaning: string;
   note?: string;
-  folderId: string;        // 🔄 تغيير من category إلى folderId
+  category: string;
   difficulty: 'سهل' | 'متوسط' | 'صعب';
   lastReviewed: number;
   correctCount: number;
   incorrectCount: number;
   nextReview: number;
-  tags?: string[];         // 🆕 tags إضافية للكلمة
   
   // SM-2 Algorithm Fields
   easeFactor: number;        // 2.5 افتراضي (1.3 أدنى حد)
@@ -33,194 +19,13 @@ export interface Word {
   quality?: number;          // آخر تقييم (0-5)
 }
 
-// 🆕 UI Types للمجلدات
-export type FolderViewMode = 'tree' | 'grid' | 'list';
-export type FolderSortBy = 'name' | 'created' | 'wordCount' | 'lastModified' | 'alphabetical';
-
-export interface FolderFilters {
-  search: string;
-  showEmpty: boolean;       // عرض المجلدات الفارغة
-  sortBy: FolderSortBy;
-  parentId?: string;        // فلترة حسب المجلد الأب
-}
-
-// 🆕 Folder Statistics
-export interface FolderStats {
-  id: string;
-  name: string;
-  totalWords: number;
-  masteredWords: number;
-  needReview: number;
-  progress: number;
-  color: string;
-  icon: string;
-  subFolders?: FolderStats[]; // إحصائيات المجلدات الفرعية
-}
-
-// تحديث FilterState لتشمل المجلدات
-export interface FilterState {
-  search: string;
-  folderId: string;         // 🔄 تغيير من category إلى folderId
-  difficulty: DifficultyFilter;
-  sortBy: SortBy;
-  showMastered?: boolean;
-  showNeedReview?: boolean;
-  tags?: string[];          // 🆕 فلترة حسب التاجات
-}
-
-// تحديث StudyFilters
-export interface StudyFilters {
-  folderIds: string[];      // 🔄 تغيير من categories إلى folderIds
-  difficulties: DifficultyFilter[];
-  needsReview: boolean;
-  masteredOnly: boolean;
-  hardestFirst: boolean;
-  randomOrder: boolean;
-  includeSubfolders?: boolean; // 🆕 تضمين المجلدات الفرعية
-  tags?: string[];          // 🆕 فلترة حسب التاجات
-}
-
-// تحديث AppData للمجلدات
-export interface AppData {
-  words: Word[];
-  folders: Folder[];        // 🔄 تغيير من categories إلى folders
-  savedAt: number;
-  version?: string;
-  
-  // 🆕 Migration info (للتوافق مع النسخة القديمة)
-  migrationVersion?: number;
-  legacyCategories?: string[]; // حفظ مؤقت للتصنيفات القديمة
-}
-
-export interface ExportData extends AppData {
-  exportedAt: string;
-  appVersion: string;
-  totalWords: number;
-  masteredWords: number;
-  totalFolders: number;     // 🆕 عدد المجلدات
-  studySessions?: StudySession[];
-}
-
-// 🆕 Folder Operations Types
-export interface FolderOperation {
-  type: 'create' | 'update' | 'delete' | 'move';
-  folderId: string;
-  timestamp: number;
-  data?: any;
-}
-
-export interface MoveOperation {
-  wordIds: number[];
-  fromFolderId: string;
-  toFolderId: string;
-  timestamp: number;
-}
-
-// تحديث Statistics لتشمل المجلدات
-export interface AppStats {
-  totalWords: number;
-  masteredWords: number;
-  wordsNeedingReview: number;
-  progress: number;
-  totalReviews?: number;
-  averageCorrectRate?: number;
-  totalFolders: number;     // 🆕 عدد المجلدات
-  streak?: {
-    current: number;
-    longest: number;
-  };
-  folderStats?: FolderStats[];     // 🔄 تغيير من categoryStats
-  difficultyStats?: DifficultyStats[];
-}
-
-// 🆕 Default Folders Configuration
-export interface DefaultFolderConfig {
-  id: string;
-  name: string;
-  color: string;
-  icon: string;
-  description: string;
-  isDefault: boolean;
-}
-
-// Navigation Types - إضافة folders
-export type NavigationTab = 'home' | 'cards' | 'study' | 'stats' | 'folders';
-
-// 🆕 Folder Tree Node (للعرض الشجري)
-export interface FolderTreeNode extends Folder {
-  children: FolderTreeNode[];
-  level: number;            // مستوى العمق في الشجرة
-  isExpanded?: boolean;     // هل المجلد مفتوح في الشجرة
-  path: string[];           // مسار المجلد من الجذر
-}
-
-// 🆕 Bulk Operations
-export interface BulkOperation {
-  action: 'move' | 'delete' | 'addTag' | 'removeTag' | 'updateDifficulty';
-  wordIds: number[];
-  targetFolderId?: string;
-  tag?: string;
-  difficulty?: 'سهل' | 'متوسط' | 'صعب';
-}
-
-// Error Types - تحديث للمجلدات
-export interface AppError {
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: number;
-  context?: 'folder' | 'word' | 'study' | 'import' | 'export';
-}
-
-// Settings Types - إضافة إعدادات المجلدات
-export interface AppSettings {
-  theme: 'light' | 'dark' | 'auto';
-  language: 'ar' | 'en';
-  notifications: {
-    enabled: boolean;
-    reviewReminders: boolean;
-    dailyGoals: boolean;
-  };
-  study: {
-    autoFlip: boolean;
-    flipDelay: number;
-    soundEffects: boolean;
-    vibration: boolean;
-  };
-  folders: {                // 🆕 إعدادات المجلدات
-    defaultViewMode: FolderViewMode;
-    showEmptyFolders: boolean;
-    autoExpandSubfolders: boolean;
-    confirmBeforeDelete: boolean;
-    defaultFolderId: string;
-  };
-  sync: {
-    enabled: boolean;
-    autoBackup: boolean;
-    backupInterval: 'daily' | 'weekly' | 'monthly';
-  };
-}
-
-// 🔄 تحديث CategoryStats إلى FolderStats (للتوافق)
-export interface FolderStatsLegacy {
-  name: string;
-  total: number;
-  mastered: number;
-  needReview: number;
-  progress: number;
-  folderId: string;        // 🆕 إضافة ID المجلد
-  color: string;           // 🆕 إضافة اللون
-  icon: string;            // 🆕 إضافة الأيقونة
-}
-
-// باقي الـ types تبقى كما هي...
 export interface Category {
   id: string;
   name: string;
   color?: string;
   icon?: string;
   createdAt: number;
-  wordCount?: number;
+  wordCount?: number;         // محسوب ديناميكياً
 }
 
 export interface StudySession {
@@ -231,13 +36,61 @@ export interface StudySession {
   correctAnswers: number;
   incorrectAnswers: number;
   sessionType?: 'review' | 'new' | 'mixed';
-  averageTime?: number;
-  folderId?: string;       // 🆕 ربط الجلسة بمجلد معين
+  averageTime?: number;       // متوسط الوقت لكل كلمة
 }
 
+export interface AppData {
+  words: Word[];
+  categories: string[];
+  savedAt: number;
+  version?: string;
+}
+
+export interface ExportData extends AppData {
+  exportedAt: string;
+  appVersion: string;
+  totalWords: number;
+  masteredWords: number;
+  studySessions?: StudySession[];
+}
+
+// UI Types
 export type ViewMode = 'grid' | 'list';
-export type SortBy = 'newest' | 'oldest' | 'alphabetical' | 'difficulty' | 'nextReview' | 'folder';
+export type SortBy = 'newest' | 'oldest' | 'alphabetical' | 'difficulty' | 'nextReview' | 'category';
 export type DifficultyFilter = 'all' | 'سهل' | 'متوسط' | 'صعب';
+
+export interface FilterState {
+  search: string;
+  category: string;
+  difficulty: DifficultyFilter;
+  sortBy: SortBy;
+  showMastered?: boolean;
+  showNeedReview?: boolean;
+}
+
+// Statistics Types
+export interface AppStats {
+  totalWords: number;
+  masteredWords: number;
+  wordsNeedingReview: number;
+  progress: number;
+  totalReviews?: number;
+  averageCorrectRate?: number;
+  streak?: {
+    current: number;
+    longest: number;
+  };
+  categoryStats?: CategoryStats[];
+  difficultyStats?: DifficultyStats[];
+}
+
+export interface CategoryStats {
+  name: string;
+  total: number;
+  mastered: number;
+  needReview: number;
+  progress: number;
+}
 
 export interface DifficultyStats {
   name: 'سهل' | 'متوسط' | 'صعب';
@@ -247,6 +100,10 @@ export interface DifficultyStats {
   averageReviews?: number;
 }
 
+// Navigation Types
+export type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
+
+// Study Mode Types
 export type StudyMode = 
   | 'classic'           // النمط الحالي
   | 'speed'            // محدود بوقت
@@ -254,6 +111,16 @@ export type StudyMode =
   | 'challenge'        // streak counter
   | 'reading';         // قراءة سريعة
 
+export interface StudyFilters {
+  categories: string[];
+  difficulties: DifficultyFilter[];
+  needsReview: boolean;
+  masteredOnly: boolean;
+  hardestFirst: boolean;
+  randomOrder: boolean;
+}
+
+// Test Types (للمراحل القادمة)
 export type TestType = 
   | 'multiple_choice'     // 4 خيارات
   | 'typing'             // كتابة الجواب
@@ -266,7 +133,7 @@ export interface TestQuestion {
   wordId: number;
   type: TestType;
   question: string;
-  options?: string[];
+  options?: string[];     // للاختيار المتعدد
   correctAnswer: string;
   userAnswer?: string;
   timeSpent?: number;
@@ -284,28 +151,98 @@ export interface Test {
 }
 
 export interface TestSettings {
-  timeLimit?: number;
+  timeLimit?: number;       // بالثواني
   questionCount: number;
-  folderIds: string[];     // 🔄 تغيير من categories
+  categories: string[];
   difficulties: DifficultyFilter[];
   randomOrder: boolean;
   showCorrectAnswer: boolean;
-  includeSubfolders?: boolean; // 🆕
 }
 
 export interface TestResults {
-  score: number;
-  percentage: number;
+  score: number;           // النقاط
+  percentage: number;      // النسبة المئوية
   totalQuestions: number;
   correctAnswers: number;
-  timeSpent: number;
+  timeSpent: number;       // بالثواني
   averageTimePerQuestion: number;
   questionsData: TestQuestion[];
 }
 
+// Error Types
+export interface AppError {
+  code: string;
+  message: string;
+  details?: any;
+  timestamp: number;
+}
+
+// Settings Types (للمراحل القادمة)
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'auto';
+  language: 'ar' | 'en';
+  notifications: {
+    enabled: boolean;
+    reviewReminders: boolean;
+    dailyGoals: boolean;
+  };
+  study: {
+    autoFlip: boolean;
+    flipDelay: number;
+    soundEffects: boolean;
+    vibration: boolean;
+  };
+  sync: {
+    enabled: boolean;
+    autoBackup: boolean;
+    backupInterval: 'daily' | 'weekly' | 'monthly';
+  };
+}
+
+// API Response Types (للمراحل القادمة)
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: AppError;
   message?: string;
 }
+
+// Folder Types (للمرحلة القادمة)
+export interface Folder {
+  id: string;
+  name: string;
+  color: string;           // #3B82F6
+  icon: string;            // 📚 أو lucide-react icon name
+  parentId?: string;       // للمجلدات الفرعية
+  createdAt: number;
+  updatedAt: number;
+  wordCount?: number;      // محسوب ديناميكياً
+  description?: string;
+}
+
+// Hook Types
+export interface UseLocalStorageReturn<T> {
+  value: T;
+  setValue: (value: T | ((prevValue: T) => T)) => void;
+  removeValue: () => void;
+}
+
+// Animation Types
+export type AnimationType = 
+  | 'slide-in-right'
+  | 'slide-in-left' 
+  | 'slide-in-up'
+  | 'slide-in-down'
+  | 'fade-in'
+  | 'scale-in'
+  | 'bounce-in';
+
+// Responsive Types
+export type BreakPoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+
+// Utility Types
+export type Timestamp = number;
+export type UUID = string;
+export type ColorHex = string;
+export type IconName = string;
