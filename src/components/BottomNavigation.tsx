@@ -1,145 +1,163 @@
 // src/components/BottomNavigation.tsx
 'use client';
 
+import { useApp } from '@/context/AppContext';
 import { BarChart3, BookOpen, Brain, Home, Plus } from 'lucide-react';
-import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React, { useState } from 'react';
+import SlideUpAddForm from './SlideUpAddForm';
 
-type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
+const BottomNavigation: React.FC = () => {
+  const { stats } = useApp();
+  const pathname = usePathname();
+  const [showAddForm, setShowAddForm] = useState(false);
 
-interface BottomNavigationProps {
-  currentTab: NavigationTab;
-  onTabChange: (tab: NavigationTab) => void;
-  onAddWord: () => void;
-  wordsNeedingReview: number;
-}
-
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ 
-  currentTab, 
-  onTabChange, 
-  onAddWord,
-  wordsNeedingReview 
-}) => {
-  const tabs = [
+  // تعريف عناصر التنقل
+  const navItems = [
     {
-      id: 'home' as const,
-      icon: Home,
+      id: 'home',
       label: 'الرئيسية',
-      position: 'left'
+      icon: Home,
+      href: '/',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-900/30',
+      borderColor: 'border-blue-800/50',
     },
     {
-      id: 'cards' as const,
-      icon: BookOpen,
+      id: 'cards',
       label: 'البطاقات',
-      position: 'left'
+      icon: BookOpen,
+      href: '/cards',
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-900/30',
+      borderColor: 'border-purple-800/50',
     },
     {
-      id: 'study' as const,
-      icon: Brain,
+      id: 'study',
       label: 'المراجعة',
-      position: 'right',
-      badge: wordsNeedingReview > 0 ? wordsNeedingReview : undefined
+      icon: Brain,
+      href: '/study',
+      color: 'text-green-400',
+      bgColor: 'bg-green-900/30',
+      borderColor: 'border-green-800/50',
+      badge: stats.wordsNeedingReview > 0 ? stats.wordsNeedingReview : undefined,
     },
     {
-      id: 'stats' as const,
-      icon: BarChart3,
+      id: 'stats',
       label: 'الإحصائيات',
-      position: 'right'
-    }
+      icon: BarChart3,
+      href: '/stats',
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-900/30',
+      borderColor: 'border-orange-800/50',
+    },
   ];
 
+  // التحقق من كون الرابط نشط
+  const isActive = (href: string): boolean => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="bg-gray-900/95 backdrop-blur-sm border-t border-gray-700/50 shadow-lg">
-        <div className="max-w-sm mx-auto px-6 py-2">
-          <div className="flex items-center justify-between relative">
-            {/* Left tabs */}
-            <div className="flex gap-4 items-center">
-              {tabs.filter(tab => tab.position === 'left').map((tab) => {
-                const Icon = tab.icon;
-                const isActive = currentTab === tab.id;
+    <>
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/95 backdrop-blur-xl border-t border-gray-700/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative flex items-center justify-center h-16 lg:h-20 max-w-md mx-auto">
+            
+            {/* Navigation Items */}
+            <div className="flex items-center justify-between w-full max-w-md lg:max-w-lg">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
                 
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
-                      isActive 
-                        ? 'text-blue-400 bg-blue-900/30' 
-                        : 'text-gray-400 hover:text-gray-300 justify-center hover:bg-gray-800/50'
-                    }`}
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`
+                      relative flex flex-col items-center space-y-1 p-3 lg:p-4 rounded-2xl transition-all duration-300 group
+                      ${active 
+                        ? `${item.bgColor} ${item.borderColor} border` 
+                        : 'hover:bg-gray-800/50'
+                      }
+                      hover:scale-105 active:scale-95 touch-manipulation
+                    `}
                   >
+                    {/* Icon Container */}
                     <div className="relative">
                       <Icon 
-                        size={24} 
-                        className={`transition-all duration-200 ${
-                          isActive ? 'scale-110' : ''
-                        }`}
+                        size={20} 
+                        className={`
+                          lg:w-6 lg:h-6 transition-colors duration-200
+                          ${active ? item.color : 'text-gray-400 group-hover:text-gray-300'}
+                        `} 
                       />
-                      {tab.badge && (
-                        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                          {tab.badge > 99 ? '99+' : tab.badge}
+                      
+                      {/* Badge للمراجعة */}
+                      {item.badge && (
+                        <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-white">
+                            {item.badge > 99 ? '99+' : item.badge}
+                          </span>
                         </div>
                       )}
                     </div>
-                    {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
-                      isActive ? 'text-blue-400' : 'text-gray-400'
-                    }`}>{tab.label}</span>}
-                  </button>
+
+                    {/* Label */}
+                    <span className={`
+                      text-xs lg:text-sm font-medium transition-colors duration-200
+                      ${active ? item.color : 'text-gray-400 group-hover:text-gray-300'}
+                    `}>
+                      {item.label}
+                    </span>
+
+                    {/* Active Indicator */}
+                    {active && (
+                      <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-1 ${item.color.replace('text-', 'bg-')} rounded-full`} />
+                    )}
+                  </Link>
                 );
               })}
             </div>
 
-            {/* Add Button */}
+            {/* Add Button - في المنتصف */}
             <button
-              onClick={onAddWord}
-              className="relative z-10 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 group"
+              onClick={() => setShowAddForm(true)}
+              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-14 h-14 lg:w-16 lg:h-16 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation group"
+              title="إضافة كلمة جديدة"
             >
-              <Plus size={24} className="text-white group-hover:rotate-180 transition-transform duration-300" />
+              <Plus size={24} className="text-white lg:w-7 lg:h-7 group-hover:rotate-90 transition-transform duration-300" />
               
-              {/* Ripple effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-purple-700 opacity-30 animate-ping"></div>
+              {/* Ripple Effect */}
+              <div className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-active:opacity-100 group-active:animate-ping transition-opacity duration-200" />
             </button>
-
-            {/* Right tabs */}
-            <div className="flex gap-4 items-center">
-              {tabs.filter(tab => tab.position === 'right').map((tab) => {
-                const Icon = tab.icon;
-                const isActive = currentTab === tab.id;
-                
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    className={`relative flex flex-col items-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer ${
-                      isActive 
-                        ? 'text-blue-400 bg-blue-900/30' 
-                        : 'text-gray-400 hover:text-gray-300 justify-center hover:bg-gray-800/50'
-                    }`}
-                  >
-                    <div className="relative">
-                      <Icon 
-                        size={24} 
-                        className={`transition-all duration-200 ${
-                          isActive ? 'scale-110' : ''
-                        }`}
-                      />
-                      {tab.badge && (
-                        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                          {tab.badge > 99 ? '99+' : tab.badge}
-                        </div>
-                      )}
-                    </div>
-                    {isActive && <span className={`text-xs font-medium transition-all duration-200 ${
-                      isActive ? 'text-blue-400' : 'text-gray-400'
-                    }`}>{tab.label}</span>}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
-      </div>
-    </div>
+
+        {/* Progress Indicator للآيباد */}
+        {stats.totalWords > 0 && (
+          <div className="hidden lg:block absolute top-0 left-0 right-0">
+            <div className="h-1 bg-gray-800">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-1000 ease-out"
+                style={{ width: `${stats.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Add Word Form */}
+      <SlideUpAddForm
+        isOpen={showAddForm}
+        onClose={() => setShowAddForm(false)}
+      />
+    </>
   );
 };
 

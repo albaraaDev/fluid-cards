@@ -1,4 +1,7 @@
-
+// src/app/layout.tsx
+import AppHeader from '@/components/AppHeader';
+import BottomNavigation from '@/components/BottomNavigation';
+import { AppProvider } from '@/context/AppContext';
 import type { Metadata, Viewport } from 'next';
 import { Cairo } from 'next/font/google';
 import './globals.css';
@@ -10,7 +13,7 @@ const cairo = Cairo({
   weight: ['400', '500', '600', '700'],
 })
 
-const APP_VERSION = "1.0.0";
+// const APP_VERSION = "2.0.0";
 
 export const metadata: Metadata = {
   title: {
@@ -85,23 +88,8 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Fluid Cards',
-    startupImage: [
-      {
-        url: '/apple-startup-750x1334.png',
-        media: '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
-      },
-      {
-        url: '/apple-startup-828x1792.png',
-        media: '(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)',
-      },
-    ],
   },
-  other: {
-    'msapplication-TileColor': '#1e40af',
-    'msapplication-config': '/browserconfig.xml',
-    'app-version': APP_VERSION,
-  },
-}
+};
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -109,105 +97,34 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#1e40af' },
-    { media: '(prefers-color-scheme: dark)', color: '#1e40af' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
   ],
-  colorScheme: 'dark',
+};
+
+interface RootLayoutProps {
+  children: React.ReactNode;
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
-      <head>
-        {/* PWA Meta Tags */}
-        <meta name="application-name" content="Fluid Cards" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Fluid Cards" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-tap-highlight" content="no" />
-        
-        {/* Preload critical resources */}
-        
-        {/* DNS prefetch for external domains */}
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//supabase.co" />
-        
-        {/* Manifest and Icons */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-        
-        {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#1e40af" />
-        
-        {/* Microsoft Tiles */}
-        <meta name="msapplication-TileColor" content="#1e40af" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-      </head>
-      <body className={`${cairo.className} font-sans antialiased`}>
-        {/* Background Pattern */}
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-pink-600/20" />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl floating" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl floating-delayed" />
-          <div className="absolute top-3/4 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl floating" />
-        </div>
-
-        {/* Main App */}
-        <div className="relative min-h-screen bg-black/40">
+      <body className="font-cairo bg-slate-900 text-white antialiased overflow-x-hidden">
+        <AppProvider>
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
+            {/* Header */}
+            <AppHeader />
+            
+            {/* Main Content */}
+            <main className="pt-20 pb-24 min-h-screen">
               {children}
-        </div>
-
-        {/* Service Worker Registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('✅ ServiceWorker registration successful');
-                    })
-                    .catch(function(error) {
-                      console.log('❌ ServiceWorker registration failed:', error);
-                    });
-                });
-              }
-            `,
-          }}
-        />
-
-        {/* Analytics and Performance Monitoring */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Performance monitoring
-              if ('PerformanceObserver' in window) {
-                const observer = new PerformanceObserver((list) => {
-                  for (const entry of list.getEntries()) {
-                    if (entry.entryType === 'largest-contentful-paint') {
-                      console.log('📊 LCP:', entry.startTime);
-                    }
-                    if (entry.entryType === 'first-input') {
-                      console.log('📊 FID:', entry.processingStart - entry.startTime);
-                    }
-                  }
-                });
-                
-                observer.observe({entryTypes: ['largest-contentful-paint', 'first-input']});
-              }
-            `,
-          }}
-        />
+            </main>
+            
+            {/* Bottom Navigation */}
+            <BottomNavigation />
+          </div>
+        </AppProvider>
       </body>
     </html>
-  )
+  );
 }
