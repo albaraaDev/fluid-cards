@@ -103,15 +103,13 @@ export interface DifficultyStats {
 // Navigation Types
 export type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
 
-// Study Mode Types (للمراحل القادمة)
+// Study Mode Types
 export type StudyMode = 
   | 'classic'           // النمط الحالي
   | 'speed'            // محدود بوقت
   | 'reverse'          // من المعنى للكلمة  
   | 'challenge'        // streak counter
-  | 'reading'          // قراءة سريعة
-  | 'typing'           // كتابة الإجابة
-  | 'multiple_choice'; // اختيار متعدد
+  | 'reading';         // قراءة سريعة
 
 export interface StudyFilters {
   categories: string[];
