@@ -103,15 +103,15 @@ export interface DifficultyStats {
 // Navigation Types
 export type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
 
-// Study Mode Types (محدث)
+// Study Mode Types (للمراحل القادمة)
 export type StudyMode = 
-  | 'classic'           // النمط الحالي مع تقييم 0-5
-  | 'speed'            // محدود بوقت مع تقييم سريع
+  | 'classic'           // النمط الحالي
+  | 'speed'            // محدود بوقت
   | 'reverse'          // من المعنى للكلمة  
-  | 'challenge'        // streak counter ونظام نقاط
-  | 'reading'          // قراءة سريعة بدون تقييم
-  | 'typing'           // كتابة الإجابة (للمستقبل)
-  | 'multiple_choice'; // اختيار متعدد (للمستقبل)
+  | 'challenge'        // streak counter
+  | 'reading'          // قراءة سريعة
+  | 'typing'           // كتابة الإجابة
+  | 'multiple_choice'; // اختيار متعدد
 
 export interface StudyFilters {
   categories: string[];
@@ -120,28 +120,6 @@ export interface StudyFilters {
   masteredOnly: boolean;
   hardestFirst: boolean;
   randomOrder: boolean;
-}
-
-export interface StudySettings {
-  mode: StudyMode;
-  filters: StudyFilters;
-  timeLimit?: number;        // للأنماط المحدودة بالوقت
-  questionCount?: number;    // عدد الأسئلة المحدد
-  showHints?: boolean;       // إظهار تلميحات
-  autoAdvance?: boolean;     // التقدم التلقائي
-}
-
-export interface StudySessionResult {
-  mode: StudyMode;
-  startTime: number;
-  endTime: number;
-  wordsStudied: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-  streak: number;           // أطول سلسلة صحيحة
-  points: number;           // النقاط المكتسبة
-  averageResponseTime: number; // متوسط وقت الاستجابة
-  filters: StudyFilters;
 }
 
 // Test Types (للمراحل القادمة)
