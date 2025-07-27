@@ -1,7 +1,7 @@
 
-import type { Metadata, Viewport } from 'next'
-import { Cairo } from 'next/font/google'
-import './globals.css'
+import type { Metadata, Viewport } from 'next';
+import { Cairo } from 'next/font/google';
+import './globals.css';
 
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
@@ -9,6 +9,8 @@ const cairo = Cairo({
   variable: '--font-cairo',
   weight: ['400', '500', '600', '700'],
 })
+
+const APP_VERSION = "1.0.0";
 
 export const metadata: Metadata = {
   title: {
@@ -97,6 +99,7 @@ export const metadata: Metadata = {
   other: {
     'msapplication-TileColor': '#1e40af',
     'msapplication-config': '/browserconfig.xml',
+    'app-version': APP_VERSION,
   },
 }
 
