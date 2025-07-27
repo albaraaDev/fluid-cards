@@ -17,19 +17,19 @@ import {
   SkipForward,
   Target,
   Trophy,
-  XCircle
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 export default function StudyPage() {
   const { words, updateProgressWithQuality } = useApp();
-  
+
   // Study Mode State
   const [currentMode, setCurrentMode] = useState<StudyMode>('classic');
   const [isStudyActive, setIsStudyActive] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Filters State
   const [filters, setFilters] = useState<StudyFiltersType>({
     categories: [],
@@ -39,14 +39,19 @@ export default function StudyPage() {
     hardestFirst: false,
     randomOrder: false,
   });
-  
+
   // Session State
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0, streak: 0, maxStreak: 0 });
+  const [sessionStats, setSessionStats] = useState({
+    correct: 0,
+    incorrect: 0,
+    streak: 0,
+    maxStreak: 0,
+  });
   const [showResult, setShowResult] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
-  
+
   // Speed Mode State
   const [timeLeft, setTimeLeft] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -54,7 +59,7 @@ export default function StudyPage() {
 
   // Get unique categories
   const categories = useMemo(() => {
-    return Array.from(new Set(words.map(w => w.category)));
+    return Array.from(new Set(words.map((w) => w.category)));
   }, [words]);
 
   // Apply filters to words
@@ -63,25 +68,29 @@ export default function StudyPage() {
 
     // Apply category filter
     if (filters.categories.length > 0) {
-      filtered = filtered.filter(w => filters.categories.includes(w.category));
+      filtered = filtered.filter((w) =>
+        filters.categories.includes(w.category)
+      );
     }
 
     // Apply difficulty filter
     if (filters.difficulties.length > 0) {
-      filtered = filtered.filter(w => filters.difficulties.includes(w.difficulty));
+      filtered = filtered.filter((w) =>
+        filters.difficulties.includes(w.difficulty)
+      );
     }
 
     // Apply review status filter
     if (filters.needsReview) {
-      filtered = filtered.filter(w => w.nextReview <= Date.now());
+      filtered = filtered.filter((w) => w.nextReview <= Date.now());
     }
 
     // Apply mastery filter
     if (filters.masteredOnly) {
-      filtered = filtered.filter(w => w.correctCount >= 3);
+      filtered = filtered.filter((w) => w.correctCount >= 3);
     } else if (!filters.needsReview) {
       // If not filtering for mastered only and not filtering for needs review, filter for needs review by default
-      filtered = filtered.filter(w => w.nextReview <= Date.now());
+      filtered = filtered.filter((w) => w.nextReview <= Date.now());
     }
 
     // Apply sorting
@@ -92,8 +101,10 @@ export default function StudyPage() {
     } else {
       // Default: prioritize words that need review and have low ease factor
       filtered.sort((a, b) => {
-        const aScore = (a.nextReview <= Date.now() ? 100 : 0) + (5 - a.easeFactor) * 10;
-        const bScore = (b.nextReview <= Date.now() ? 100 : 0) + (5 - b.easeFactor) * 10;
+        const aScore =
+          (a.nextReview <= Date.now() ? 100 : 0) + (5 - a.easeFactor) * 10;
+        const bScore =
+          (b.nextReview <= Date.now() ? 100 : 0) + (5 - b.easeFactor) * 10;
         return bScore - aScore;
       });
     }
@@ -105,10 +116,21 @@ export default function StudyPage() {
 
   // Timer for speed mode
   useEffect(() => {
-    if (currentMode === 'speed' && timeLeft > 0 && !isPaused && isStudyActive && !showResult) {
+    if (
+      currentMode === 'speed' &&
+      timeLeft > 0 &&
+      !isPaused &&
+      isStudyActive &&
+      !showResult
+    ) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (currentMode === 'speed' && timeLeft === 0 && isStudyActive && !showResult) {
+    } else if (
+      currentMode === 'speed' &&
+      timeLeft === 0 &&
+      isStudyActive &&
+      !showResult
+    ) {
       // Auto advance on timeout
       handleAnswer(1); // Consider timeout as difficult
     }
@@ -116,10 +138,15 @@ export default function StudyPage() {
 
   // Auto advance for reading mode
   useEffect(() => {
-    if (currentMode === 'reading' && autoAdvance && isStudyActive && !showResult) {
+    if (
+      currentMode === 'reading' &&
+      autoAdvance &&
+      isStudyActive &&
+      !showResult
+    ) {
       const timer = setTimeout(() => {
         if (currentIndex < filteredWords.length - 1) {
-          setCurrentIndex(prev => prev + 1);
+          setCurrentIndex((prev) => prev + 1);
           setIsFlipped(false);
           setTimeout(() => setIsFlipped(true), 1000);
         } else {
@@ -128,7 +155,14 @@ export default function StudyPage() {
       }, 3000); // 3 seconds per word in reading mode
       return () => clearTimeout(timer);
     }
-  }, [currentMode, autoAdvance, isStudyActive, currentIndex, filteredWords.length, showResult]);
+  }, [
+    currentMode,
+    autoAdvance,
+    isStudyActive,
+    currentIndex,
+    filteredWords.length,
+    showResult,
+  ]);
 
   // Reset session when starting study
   const startStudy = useCallback(() => {
@@ -147,11 +181,11 @@ export default function StudyPage() {
     if (!currentWord) return;
 
     updateProgressWithQuality(currentWord.id, quality);
-    
+
     const isCorrect = quality >= 3;
     const newStreak = isCorrect ? sessionStats.streak + 1 : 0;
-    
-    setSessionStats(prev => ({
+
+    setSessionStats((prev) => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
       streak: newStreak,
@@ -161,11 +195,12 @@ export default function StudyPage() {
     setShowResult(true);
 
     // Auto advance timing based on mode
-    const delay = currentMode === 'speed' ? 800 : currentMode === 'reading' ? 500 : 1500;
-    
+    const delay =
+      currentMode === 'speed' ? 800 : currentMode === 'reading' ? 500 : 1500;
+
     setTimeout(() => {
       if (currentIndex < filteredWords.length - 1) {
-        setCurrentIndex(prev => prev + 1);
+        setCurrentIndex((prev) => prev + 1);
         setIsFlipped(false);
         setShowResult(false);
         setTimeLeft(currentMode === 'speed' ? 10 : 0);
@@ -178,7 +213,7 @@ export default function StudyPage() {
   // Skip current word
   const skipWord = () => {
     if (currentIndex < filteredWords.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex((prev) => prev + 1);
       setIsFlipped(false);
       setShowResult(false);
       setTimeLeft(currentMode === 'speed' ? 10 : 0);
@@ -201,10 +236,14 @@ export default function StudyPage() {
   // Get difficulty color
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'سهل': return 'bg-green-500';
-      case 'متوسط': return 'bg-yellow-500';
-      case 'صعب': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'سهل':
+        return 'bg-green-500';
+      case 'متوسط':
+        return 'bg-yellow-500';
+      case 'صعب':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
@@ -212,10 +251,11 @@ export default function StudyPage() {
   if (!isStudyActive && !sessionComplete) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        
         {/* Filters Toggle */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl lg:text-3xl font-bold text-white">إعداد جلسة الدراسة</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white">
+            إعداد جلسة الدراسة
+          </h1>
           <StudyFilters
             filters={filters}
             onFiltersChange={setFilters}
@@ -264,11 +304,13 @@ export default function StudyPage() {
           <div className="w-32 h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-orange-500 to-red-600 rounded-full mx-auto mb-8 flex items-center justify-center shadow-2xl">
             <Settings size={48} className="text-white lg:w-16 lg:h-16" />
           </div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-6">لا توجد كلمات متطابقة</h1>
+          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+            لا توجد كلمات متطابقة
+          </h1>
           <p className="text-xl lg:text-2xl text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
             يرجى تعديل الفلاتر أو إضافة المزيد من الكلمات للدراسة
           </p>
-          
+
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button
               onClick={() => setIsStudyActive(false)}
@@ -277,7 +319,7 @@ export default function StudyPage() {
               <Settings size={20} />
               <span>تعديل الفلاتر</span>
             </button>
-            
+
             <Link
               href="/cards"
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 px-8 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
@@ -294,7 +336,10 @@ export default function StudyPage() {
   // Session completed
   if (sessionComplete) {
     const totalAnswered = sessionStats.correct + sessionStats.incorrect;
-    const successRate = totalAnswered > 0 ? Math.round((sessionStats.correct / totalAnswered) * 100) : 0;
+    const successRate =
+      totalAnswered > 0
+        ? Math.round((sessionStats.correct / totalAnswered) * 100)
+        : 0;
 
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
@@ -302,9 +347,11 @@ export default function StudyPage() {
           <div className="w-32 h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full mx-auto mb-8 flex items-center justify-center shadow-2xl">
             <Trophy size={48} className="text-white lg:w-16 lg:h-16" />
           </div>
-          
-          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-6">🎊 انتهت الجلسة!</h1>
-          
+
+          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-6">
+            🎊 انتهت الجلسة!
+          </h1>
+
           {/* Mode-specific celebration */}
           {currentMode === 'challenge' && sessionStats.maxStreak >= 5 && (
             <div className="mb-6">
@@ -315,7 +362,9 @@ export default function StudyPage() {
             </div>
           )}
 
-          <p className="text-xl lg:text-2xl text-gray-400 mb-8">عمل رائع! إليك ملخص أدائك</p>
+          <p className="text-xl lg:text-2xl text-gray-400 mb-8">
+            عمل رائع! إليك ملخص أدائك
+          </p>
 
           {/* Results */}
           <div className="bg-gray-800 rounded-3xl p-8 border border-gray-700 max-w-2xl mx-auto mb-8">
@@ -349,15 +398,17 @@ export default function StudyPage() {
             {/* Progress bar */}
             <div className="mt-8">
               <div className="w-full bg-gray-700 rounded-full h-3 lg:h-4">
-                <div 
+                <div
                   className="bg-gradient-to-r from-green-500 to-blue-600 h-full rounded-full transition-all duration-1000"
                   style={{ width: `${successRate}%` }}
                 />
               </div>
               <p className="text-sm lg:text-base text-gray-400 mt-2">
-                {successRate >= 80 ? 'أداء ممتاز! 🌟' : 
-                 successRate >= 60 ? 'أداء جيد! 👍' : 
-                 'يمكنك التحسن أكثر! 💪'}
+                {successRate >= 80
+                  ? 'أداء ممتاز! 🌟'
+                  : successRate >= 60
+                  ? 'أداء جيد! 👍'
+                  : 'يمكنك التحسن أكثر! 💪'}
               </p>
             </div>
           </div>
@@ -370,7 +421,7 @@ export default function StudyPage() {
               <RefreshCw size={20} />
               <span>إعادة الجلسة</span>
             </button>
-            
+
             <button
               onClick={() => setIsStudyActive(false)}
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 px-8 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
@@ -378,7 +429,7 @@ export default function StudyPage() {
               <Settings size={20} />
               <span>تغيير النمط</span>
             </button>
-            
+
             <Link
               href="/"
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-700 hover:bg-gray-600 text-gray-300 px-8 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
@@ -393,34 +444,46 @@ export default function StudyPage() {
   }
 
   // Active study session
-  const progress = filteredWords.length > 0 ? ((currentIndex + 1) / filteredWords.length) * 100 : 0;
+  const progress =
+    filteredWords.length > 0
+      ? ((currentIndex + 1) / filteredWords.length) * 100
+      : 0;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-      
       {/* Header with mode indicator */}
       <div className="mb-8 lg:mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="text-2xl">
-              {currentMode === 'classic' ? '🧠' : 
-               currentMode === 'speed' ? '⚡' : 
-               currentMode === 'reverse' ? '🔄' : 
-               currentMode === 'challenge' ? '🏆' : '📚'}
+              {currentMode === 'classic'
+                ? '🧠'
+                : currentMode === 'speed'
+                ? '⚡'
+                : currentMode === 'reverse'
+                ? '🔄'
+                : currentMode === 'challenge'
+                ? '🏆'
+                : '📚'}
             </div>
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-white">
-                {currentMode === 'classic' ? 'النمط الكلاسيكي' : 
-                 currentMode === 'speed' ? 'السرعة' : 
-                 currentMode === 'reverse' ? 'العكسي' : 
-                 currentMode === 'challenge' ? 'التحدي' : 'القراءة السريعة'}
+                {currentMode === 'classic'
+                  ? 'النمط الكلاسيكي'
+                  : currentMode === 'speed'
+                  ? 'السرعة'
+                  : currentMode === 'reverse'
+                  ? 'العكسي'
+                  : currentMode === 'challenge'
+                  ? 'التحدي'
+                  : 'القراءة السريعة'}
               </h1>
               <p className="text-gray-400">
                 الكلمة {currentIndex + 1} من {filteredWords.length}
               </p>
             </div>
           </div>
-          
+
           {/* Speed mode timer */}
           {currentMode === 'speed' && (
             <div className="flex items-center space-x-3">
@@ -430,12 +493,16 @@ export default function StudyPage() {
               >
                 {isPaused ? <Play size={20} /> : <Pause size={20} />}
               </button>
-              <div className={`text-2xl font-bold ${timeLeft <= 3 ? 'text-red-400' : 'text-blue-400'}`}>
+              <div
+                className={`text-2xl font-bold ${
+                  timeLeft <= 3 ? 'text-red-400' : 'text-blue-400'
+                }`}
+              >
                 {timeLeft}s
               </div>
             </div>
           )}
-          
+
           {/* Challenge mode streak */}
           {currentMode === 'challenge' && (
             <div className="text-right">
@@ -449,7 +516,7 @@ export default function StudyPage() {
 
         {/* Progress bar */}
         <div className="w-full bg-gray-800 rounded-full h-2 lg:h-3 mb-4">
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
@@ -467,7 +534,10 @@ export default function StudyPage() {
           </div>
           <div className="flex items-center space-x-2 text-gray-400">
             <Clock size={16} />
-            <span>{sessionStats.correct + sessionStats.incorrect} / {filteredWords.length}</span>
+            <span>
+              {sessionStats.correct + sessionStats.incorrect} /{' '}
+              {filteredWords.length}
+            </span>
           </div>
           {currentMode === 'challenge' && (
             <div className="flex items-center space-x-2 text-orange-400">
@@ -483,10 +553,16 @@ export default function StudyPage() {
         {/* Result overlay */}
         {showResult && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-3xl">
-            <div className={`
+            <div
+              className={`
               w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center shadow-2xl
-              ${sessionStats.correct > sessionStats.incorrect ? 'bg-green-500' : 'bg-red-500'}
-            `}>
+              ${
+                sessionStats.correct > sessionStats.incorrect
+                  ? 'bg-green-500'
+                  : 'bg-red-500'
+              }
+            `}
+            >
               {sessionStats.correct > sessionStats.incorrect ? (
                 <CheckCircle size={48} className="text-white lg:w-16 lg:h-16" />
               ) : (
@@ -501,24 +577,43 @@ export default function StudyPage() {
           <div
             className={`
               relative w-full h-full transition-transform duration-700 preserve-3d cursor-pointer
-              ${isFlipped || currentMode === 'reverse' || currentMode === 'reading' ? 'rotate-y-180' : ''}
+              ${
+                isFlipped ||
+                currentMode === 'reverse' ||
+                currentMode === 'reading'
+                  ? 'rotate-y-180'
+                  : ''
+              }
             `}
-            onClick={() => currentMode !== 'reading' && setIsFlipped(!isFlipped)}
+            onClick={() =>
+              currentMode !== 'reading' && setIsFlipped(!isFlipped)
+            }
           >
             {/* Front side */}
             <div className="absolute inset-0 w-full h-full backface-hidden bg-gradient-to-br from-blue-600 via-purple-700 to-indigo-800 rounded-3xl shadow-2xl p-8 lg:p-12 flex flex-col justify-center items-center text-white border-2 border-white/10">
               <div className="text-center">
                 <h2 className="text-4xl lg:text-6xl font-bold mb-6 lg:mb-8">
-                  {currentMode === 'reverse' ? currentWord.meaning : currentWord.word}
+                  {currentMode === 'reverse'
+                    ? currentWord.meaning
+                    : currentWord.word}
                 </h2>
                 <p className="text-blue-100 mb-8 text-lg lg:text-xl">
-                  {currentMode === 'reading' ? 'قراءة سريعة' : 
-                   currentMode === 'reverse' ? 'ما هي الكلمة؟' : 'انقر لرؤية المعنى'}
+                  {currentMode === 'reading'
+                    ? 'قراءة سريعة'
+                    : currentMode === 'reverse'
+                    ? 'ما هي الكلمة؟'
+                    : 'انقر لرؤية المعنى'}
                 </p>
-                
+
                 <div className="flex items-center justify-center gap-6 text-sm lg:text-base">
-                  <div className={`w-4 h-4 rounded-full ${getDifficultyColor(currentWord.difficulty)}`} />
-                  <span className="text-blue-200">{currentWord.difficulty}</span>
+                  <div
+                    className={`w-4 h-4 rounded-full ${getDifficultyColor(
+                      currentWord.difficulty
+                    )}`}
+                  />
+                  <span className="text-blue-200">
+                    {currentWord.difficulty}
+                  </span>
                   <span className="text-blue-300">•</span>
                   <span className="text-blue-200">{currentWord.category}</span>
                 </div>
@@ -529,12 +624,16 @@ export default function StudyPage() {
             <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-gradient-to-br from-green-600 via-emerald-700 to-teal-800 rounded-3xl shadow-2xl p-8 lg:p-12 flex flex-col justify-center items-center text-white border-2 border-white/10">
               <div className="text-center">
                 <div className="text-sm lg:text-base text-green-100 mb-4 opacity-80">
-                  {currentMode === 'reverse' ? currentWord.meaning : currentWord.word}
+                  {currentMode === 'reverse'
+                    ? currentWord.meaning
+                    : currentWord.word}
                 </div>
                 <h2 className="text-3xl lg:text-5xl font-bold mb-6 lg:mb-8 leading-relaxed">
-                  {currentMode === 'reverse' ? currentWord.word : currentWord.meaning}
+                  {currentMode === 'reverse'
+                    ? currentWord.word
+                    : currentWord.meaning}
                 </h2>
-                
+
                 {currentWord.note && (
                   <div className="bg-green-800/30 rounded-2xl p-4 lg:p-6 border border-green-600/30 mb-6">
                     <p className="text-green-100 text-lg lg:text-xl italic">
@@ -542,9 +641,11 @@ export default function StudyPage() {
                     </p>
                   </div>
                 )}
-                
+
                 <p className="text-green-100 text-lg lg:text-xl">
-                  {currentMode === 'reading' ? 'تذكر هذه الكلمة' : 'كيف كان أداؤك؟'}
+                  {currentMode === 'reading'
+                    ? 'تذكر هذه الكلمة'
+                    : 'كيف كان أداؤك؟'}
                 </p>
               </div>
             </div>
@@ -554,7 +655,10 @@ export default function StudyPage() {
 
       {/* Control buttons */}
       <div className="max-w-2xl mx-auto mt-8 lg:mt-12">
-        {(isFlipped || currentMode === 'reverse' || currentMode === 'reading') && currentMode !== 'reading' ? (
+        {(isFlipped ||
+          currentMode === 'reverse' ||
+          currentMode === 'reading') &&
+        currentMode !== 'reading' ? (
           /* Answer buttons */
           <div className="space-y-4 mb-6">
             <div className="text-center mb-4">
@@ -562,17 +666,20 @@ export default function StudyPage() {
                 كيف كان أداؤك؟
               </h3>
               <p className="text-gray-400 text-sm lg:text-base mb-3">
-                {currentMode === 'speed' ? 'إجابة سريعة!' : 'اختر مستوى صعوبة تذكر هذه الكلمة'}
+                {currentMode === 'speed'
+                  ? 'إجابة سريعة!'
+                  : 'اختر مستوى صعوبة تذكر هذه الكلمة'}
               </p>
               {currentMode !== 'speed' && (
                 <div className="bg-blue-900/20 rounded-xl p-3 border border-blue-800/30">
                   <p className="text-blue-300 text-xs lg:text-sm">
-                    🧠 النظام الذكي سيحدد توقيت المراجعة القادمة بناءً على تقييمك
+                    🧠 النظام الذكي سيحدد توقيت المراجعة القادمة بناءً على
+                    تقييمك
                   </p>
                 </div>
               )}
             </div>
-            
+
             {currentMode === 'speed' ? (
               /* Speed mode: simple correct/incorrect */
               <div className="grid grid-cols-2 gap-4 lg:gap-6">
@@ -595,12 +702,42 @@ export default function StudyPage() {
               /* Other modes: detailed rating */
               <div className="grid grid-cols-2 gap-3 lg:gap-4">
                 {[
-                  { quality: 0, label: 'نسيت تماماً', color: 'bg-red-700 hover:bg-red-800', emoji: '😰' },
-                  { quality: 1, label: 'صعب جداً', color: 'bg-red-600 hover:bg-red-700', emoji: '😟' },
-                  { quality: 2, label: 'صعب', color: 'bg-orange-600 hover:bg-orange-700', emoji: '🤔' },
-                  { quality: 3, label: 'متوسط', color: 'bg-yellow-600 hover:bg-yellow-700', emoji: '😐' },
-                  { quality: 4, label: 'جيد', color: 'bg-green-600 hover:bg-green-700', emoji: '😊' },
-                  { quality: 5, label: 'سهل جداً', color: 'bg-green-700 hover:bg-green-800', emoji: '😍' },
+                  {
+                    quality: 0,
+                    label: 'نسيت تماماً',
+                    color: 'bg-red-700 hover:bg-red-800',
+                    emoji: '😰',
+                  },
+                  {
+                    quality: 1,
+                    label: 'صعب جداً',
+                    color: 'bg-red-600 hover:bg-red-700',
+                    emoji: '😟',
+                  },
+                  {
+                    quality: 2,
+                    label: 'صعب',
+                    color: 'bg-orange-600 hover:bg-orange-700',
+                    emoji: '🤔',
+                  },
+                  {
+                    quality: 3,
+                    label: 'متوسط',
+                    color: 'bg-yellow-600 hover:bg-yellow-700',
+                    emoji: '😐',
+                  },
+                  {
+                    quality: 4,
+                    label: 'جيد',
+                    color: 'bg-green-600 hover:bg-green-700',
+                    emoji: '😊',
+                  },
+                  {
+                    quality: 5,
+                    label: 'سهل جداً',
+                    color: 'bg-green-700 hover:bg-green-800',
+                    emoji: '😍',
+                  },
                 ].map((option) => (
                   <button
                     key={option.quality}
@@ -617,7 +754,7 @@ export default function StudyPage() {
                 ))}
               </div>
             )}
-            
+
             <div className="text-center text-xs lg:text-sm text-gray-500 mt-4">
               💡 كلما قيّمت بصدق، كلما تحسن توقيت المراجعة
             </div>
@@ -630,7 +767,9 @@ export default function StudyPage() {
           >
             <RotateCcw size={24} />
             <span>
-              {currentMode === 'reverse' ? 'إظهار الكلمة' : 'إظهار المعنى'}
+              {(currentMode as StudyMode) === 'reverse'
+                ? 'إظهار الكلمة'
+                : 'إظهار المعنى'}
             </span>
           </button>
         ) : null}
@@ -644,11 +783,16 @@ export default function StudyPage() {
             >
               <RotateCcw size={20} />
               <span>
-                {isFlipped ? (currentMode === 'reverse' ? 'إخفاء الكلمة' : 'إخفاء المعنى') : 
-                            (currentMode === 'reverse' ? 'إظهار الكلمة' : 'إظهار المعنى')}
+                {isFlipped
+                  ? currentMode === 'reverse'
+                    ? 'إخفاء الكلمة'
+                    : 'إخفاء المعنى'
+                  : currentMode === 'reverse'
+                  ? 'إظهار الكلمة'
+                  : 'إظهار المعنى'}
               </span>
             </button>
-            
+
             <button
               onClick={skipWord}
               className="flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 text-gray-300 py-4 lg:py-5 rounded-2xl font-medium transition-all border border-gray-700 hover:scale-105 active:scale-95 touch-manipulation"
@@ -666,16 +810,17 @@ export default function StudyPage() {
               onClick={() => setAutoAdvance(!autoAdvance)}
               className={`
                 flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all border touch-manipulation
-                ${autoAdvance 
-                  ? 'bg-green-900/30 text-green-400 border-green-800/50' 
-                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+                ${
+                  autoAdvance
+                    ? 'bg-green-900/30 text-green-400 border-green-800/50'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
                 }
               `}
             >
               {autoAdvance ? <Pause size={20} /> : <Play size={20} />}
               <span>{autoAdvance ? 'إيقاف التلقائي' : 'تشغيل تلقائي'}</span>
             </button>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => handleAnswer(3)}
@@ -684,7 +829,7 @@ export default function StudyPage() {
                 <CheckCircle size={20} />
                 <span>أعرفها</span>
               </button>
-              
+
               <button
                 onClick={() => handleAnswer(1)}
                 className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
