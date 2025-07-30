@@ -123,12 +123,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
         className={`bg-slate-900 text-white antialiased overflow-x-hidden ${cairo.className} font-sans antialiased`}
       >
         <AppProvider>
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
+          <div className="min-h-screen pt-16 pb-[74px] bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
             {/* Header */}
             <AppHeader />
 
             {/* Main Content */}
-            <main className="py-12 min-h-screen">{children}</main>
+            <main className="min-h-screen">{children}</main>
 
             {/* Bottom Navigation */}
             <BottomNavigation />

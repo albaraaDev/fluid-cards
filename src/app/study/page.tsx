@@ -417,7 +417,6 @@ export default function StudyPage() {
           wordsCount={filteredWords.length}
           filteredWords={filteredWords}
           filters={filters}
-          className="mb-8 lg:mb-12"
         />
       </div>
     );
