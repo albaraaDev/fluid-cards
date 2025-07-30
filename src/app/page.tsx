@@ -1,6 +1,7 @@
 // src/app/page.tsx - نفس النسخة القديمة مع إصلاح Hydration فقط
 'use client';
 
+import CategoryManager from '@/components/CategoryManager';
 import ClientOnly from '@/components/ClientOnly';
 import EditWordModal from '@/components/EditWordModal';
 import WordDetailsModal from '@/components/WordDetailsModal';
@@ -13,6 +14,7 @@ import {
   CheckCircle,
   Clock,
   Edit,
+  Settings,
   Target,
   Trash2,
   TrendingUp,
@@ -22,11 +24,19 @@ import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 
 export default function HomePage() {
-  const { words, stats, updateWord, deleteWord, categories, addCategory, isClient } =
-    useApp();
+  const {
+    words,
+    stats,
+    updateWord,
+    deleteWord,
+    categories,
+    addCategory,
+    isClient,
+  } = useApp();
   const [homeTimestamp] = useState(() => Date.now());
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   // الكلمات العشوائية للمراجعة - Fixed for hydration
   const randomUnmasteredWords = useMemo(() => {
@@ -35,18 +45,18 @@ export default function HomePage() {
     const unmastered = words.filter(
       (w) => !(w.repetition >= 3 && w.interval >= 21)
     );
-    
+
     // استخدام homeTimestamp كـ seed للاستقرار بين server/client
     const seededRandom = (seed: number) => {
       const x = Math.sin(seed) * 10000;
       return x - Math.floor(x);
     };
-    
+
     return unmastered
-      .map(word => ({ word, sort: seededRandom(word.id + homeTimestamp) }))
+      .map((word) => ({ word, sort: seededRandom(word.id + homeTimestamp) }))
       .sort((a, b) => a.sort - b.sort)
       .slice(0, 6)
-      .map(item => item.word);
+      .map((item) => item.word);
   }, [words, homeTimestamp, isClient]);
 
   // إحصائيات بطاقات الحالة
@@ -119,8 +129,7 @@ export default function HomePage() {
             className="bg-gray-800/50 rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-gray-700/50 animate-pulse"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 lg:p-3 bg-gray-700 rounded-xl lg:rounded-2xl w-12 h-12">
-              </div>
+              <div className="p-2 lg:p-3 bg-gray-700 rounded-xl lg:rounded-2xl w-12 h-12"></div>
             </div>
             <div className="h-8 bg-gray-700 rounded mb-1"></div>
             <div className="h-4 bg-gray-700 rounded w-3/4"></div>
@@ -188,6 +197,14 @@ export default function HomePage() {
                 <BookOpen size={20} />
                 <span>تصفح البطاقات</span>
               </Link>
+              <button
+                onClick={() => setShowCategoryManager(true)}
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 px-6 lg:px-8 py-3 lg:py-4 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                title="إدارة التصنيفات"
+              >
+                <Settings size={20} className="lg:w-5 lg:h-5" />
+                <span>إدارة التصنيفات</span>
+              </button>
             </div>
           )}
         </div>
@@ -336,6 +353,11 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      <CategoryManager
+        isOpen={showCategoryManager}
+        onClose={() => setShowCategoryManager(false)}
+      />
 
       {/* Empty State */}
       {stats.totalWords === 0 && (
