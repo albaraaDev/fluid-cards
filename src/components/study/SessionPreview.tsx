@@ -231,7 +231,7 @@ const SessionPreview: React.FC<SessionPreviewProps> = ({
             <h4 className="text-white font-medium">أصعب الكلمات</h4>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-3 sm:grid-cols-2 lg:grid-cols-1">
+          <div className="grid gap-2">
             {sessionStats.hardestWords.slice(0, 3).map((word, index) => (
               <div
                 key={word.id}
@@ -252,7 +252,6 @@ const SessionPreview: React.FC<SessionPreviewProps> = ({
         </div>
       )}
 
-      <div className="flex lg:flex-col gap-4 max-md:flex-col">
         {/* Session Tips */}
         <div className="bg-blue-900/20 rounded-xl p-4 border border-blue-800/30 grow">
           <div className="flex items-center space-x-2 mb-3">
@@ -342,7 +341,6 @@ const SessionPreview: React.FC<SessionPreviewProps> = ({
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

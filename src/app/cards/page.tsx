@@ -186,7 +186,10 @@ export default function CardsPage() {
         {/* Note Preview */}
         {word.note && (
           <div className="mt-3 p-2 bg-gray-700/50 rounded-lg">
-            <p className="text-xs lg:text-sm text-gray-400 line-clamp-1" dir='ltr'>
+            <p
+              className="text-xs lg:text-sm text-gray-400 line-clamp-1"
+              dir="ltr"
+            >
               📝 {word.note}
             </p>
           </div>
@@ -198,7 +201,7 @@ export default function CardsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 lg:mb-8 space-y-4 lg:space-y-0">
+      <div className="flex  lg:items-center justify-between mb-6 lg:mb-8 space-y-4 lg:space-y-0">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
             البطاقات التعليمية
@@ -209,8 +212,8 @@ export default function CardsPage() {
           </p>
         </div>
 
-        {/* View & Filter Controls */}
-        <div className="flex items-center space-x-2">
+        {/* View Controls */}
+        <div className="flex items-center gap-2 justify-end">
           {/* View Mode Toggle */}
           <div className="flex bg-gray-800 rounded-xl p-1 border border-gray-700">
             <button
@@ -234,42 +237,43 @@ export default function CardsPage() {
               <List size={18} />
             </button>
           </div>
-
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-4 rounded-xl transition-all border touch-manipulation ${
-              showFilters
-                ? 'bg-blue-900/30 text-blue-400 border-blue-800/50'
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300'
-            }`}
-          >
-            <SlidersHorizontal size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-          size={20}
-        />
-        <input
-          type="text"
-          placeholder="البحث في الكلمات والمعاني..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-2xl py-4 px-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg touch-manipulation"
-        />
-        {searchTerm && (
-          <button
-            onClick={() => setSearchTerm('')}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 p-1 touch-manipulation"
-          >
-            <X size={18} />
-          </button>
-        )}
+      <div className="flex mb-8 gap-4 items-center">
+        {/* Search Bar */}
+        <div className="relative grow">
+          <Search
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="البحث في الكلمات والمعاني..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-2xl py-4 px-12 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg touch-manipulation"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 p-1 touch-manipulation"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+        {/* Filter Toggle */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`size-[62px] rounded-xl transition-all border touch-manipulation grid place-content-center ${
+            showFilters
+              ? 'bg-blue-900/30 text-blue-400 border-blue-800/50'
+              : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300'
+          }`}
+        >
+          <SlidersHorizontal size={22} />
+        </button>
       </div>
 
       {/* Filters Panel */}

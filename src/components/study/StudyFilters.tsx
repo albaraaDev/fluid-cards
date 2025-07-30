@@ -82,42 +82,17 @@ const StudyFilters: React.FC<StudyFiltersProps> = ({
     (filters.masteredOnly ? 1 : 0) + 
     (filters.hardestFirst ? 1 : 0) + 
     (filters.randomOrder ? 1 : 0);
-
-  if (!isOpen) {
-    return (
-      <button
-        onClick={onToggle}
-        className={`
-          flex items-center space-x-2 px-4 py-3 rounded-xl font-medium transition-all 
-          border touch-manipulation hover:scale-105 active:scale-95
-          ${activeFiltersCount > 0 
-            ? 'bg-blue-900/30 text-blue-400 border-blue-800/50 shadow-lg' 
-            : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
-          }
-        `}
-      >
-        <Filter size={18} />
-        <span className="hidden sm:inline">فلترة</span>
-        {activeFiltersCount > 0 && (
-          <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-            {activeFiltersCount}
-          </div>
-        )}
-      </button>
-    );
-  }
-
   return (
-    <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 space-y-6">
+    <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 space-y-6 mb-4 mx-4">
       
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Settings className="text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-white">فلترة الكلمات</h3>
-          <div className="text-sm text-gray-400">
+          {/* <div className="text-sm text-gray-400">
             ({filteredCount} من {wordsCount})
-          </div>
+          </div> */}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -194,7 +169,7 @@ const StudyFilters: React.FC<StudyFiltersProps> = ({
               `}
             >
               <Icon size={16} />
-              <span className="hidden sm:inline">{option.label}</span>
+              <span className="">{option.label}</span>
             </button>
           );
         })}

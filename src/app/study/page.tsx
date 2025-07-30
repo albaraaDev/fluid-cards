@@ -13,6 +13,7 @@ import {
   ArrowRight,
   CheckCircle,
   Clock,
+  Filter,
   Pause,
   Play,
   RefreshCw,
@@ -159,7 +160,6 @@ export default function StudyPage() {
       handleAnswer(1); // Consider timeout as difficult
     }
   }, [timeLeft, isPaused, currentMode, isStudyActive, showResult]);
-  
 
   // Auto advance for reading mode
   useEffect(() => {
@@ -333,6 +333,14 @@ export default function StudyPage() {
     setSessionComplete(false);
   };
 
+  const activeFiltersCount =
+    filters.categories.length +
+    filters.difficulties.length +
+    (filters.needsReview ? 1 : 0) +
+    (filters.masteredOnly ? 1 : 0) +
+    (filters.hardestFirst ? 1 : 0) +
+    (filters.randomOrder ? 1 : 0);
+
   // Get difficulty color
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -352,21 +360,40 @@ export default function StudyPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* Filters Toggle */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between px-4">
           <h1 className="text-2xl lg:text-3xl font-bold text-white">
             إعداد جلسة الدراسة
           </h1>
-          <StudyFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            categories={categories}
-            isOpen={showFilters}
-            onToggle={() => setShowFilters(!showFilters)}
-            wordsCount={words.length}
-            filteredCount={filteredWords.length}
-          />
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`
+          flex items-center gap-2 px-4 py-3 rounded-xl font-medium transition-all 
+          border touch-manipulation hover:scale-105 active:scale-95
+          ${
+            activeFiltersCount > 0
+              ? 'bg-blue-900/30 text-blue-400 border-blue-800/50 shadow-lg'
+              : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+          }
+        `}
+          >
+            <Filter size={18} />
+            <span className="hidden sm:inline">فلترة</span>
+            {activeFiltersCount > 0 && (
+              <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                {activeFiltersCount}
+              </div>
+            )}
+          </button>
         </div>
-
+        {showFilters && <StudyFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          categories={categories}
+          isOpen={showFilters}
+          onToggle={() => setShowFilters(!showFilters)}
+          wordsCount={words.length}
+          filteredCount={filteredWords.length}
+        />}
         {/* Filters Panel
         {showFilters && (
           <div className="mb-8">
