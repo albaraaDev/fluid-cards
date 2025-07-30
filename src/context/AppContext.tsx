@@ -106,6 +106,7 @@ interface AppContextType {
   
   // Category Management
   addCategory: (category: string) => void;
+  deleteCategory: (category: string) => void;
   
   // Data Management
   exportData: () => void;
@@ -377,6 +378,44 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   }, [categories, setCategories, isClient]);
 
+  //  حذف تصنيف 🗑️
+  const deleteCategory = useCallback((categoryToDelete: string) => {
+    if (!isClient) return;
+    
+    // التحقق من وجود كلمات تستخدم هذا التصنيف
+    const wordsUsingCategory = words.filter(word => word.category === categoryToDelete);
+    
+    if (wordsUsingCategory.length > 0) {
+      const confirmDelete = confirm(
+        `يوجد ${wordsUsingCategory.length} كلمات تستخدم تصنيف "${categoryToDelete}". هل تريد نقلها إلى "عام" وحذف التصنيف؟`
+      );
+      
+      if (!confirmDelete) return;
+      
+      // نقل الكلمات إلى تصنيف "عام"
+      setWords(prevWords => 
+        prevWords.map(word => 
+          word.category === categoryToDelete 
+            ? { ...word, category: 'عام' }
+            : word
+        )
+      );
+      
+      // إضافة "عام" للتصنيفات إذا لم يكن موجود
+      setCategories(prevCategories => {
+        const newCategories = prevCategories.filter(cat => cat !== categoryToDelete);
+        if (!newCategories.includes('عام')) {
+          newCategories.unshift('عام');
+        }
+        return newCategories;
+      });
+    } else {
+      // حذف التصنيف مباشرة إذا لم تكن هناك كلمات تستخدمه
+      setCategories(prevCategories => 
+        prevCategories.filter(cat => cat !== categoryToDelete)
+      );
+    }
+  }, [words, setWords, setCategories, isClient]);
   // ==========================================
   // Data Management
   // ==========================================
@@ -619,6 +658,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     // Category Management
     addCategory,
+    deleteCategory,
 
     // Data Management
     exportData,

@@ -1,4 +1,4 @@
-// src/components/SlideUpAddForm.tsx
+// src/components/SlideUpAddForm.tsx - Fixed Version
 'use client';
 
 import { useApp } from '@/context/AppContext';
@@ -35,7 +35,7 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Reset form عند فتح Modal
+  // Reset form عند فتح Modal فقط
   useEffect(() => {
     if (isOpen) {
       setFormData({
@@ -49,7 +49,14 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
       setIsAddingCategory(false);
       setErrors({});
     }
-  }, [isOpen, categories]);
+  }, [isOpen]); // إزالة categories من dependencies لحل المشكلة
+
+  // تحديث الفئة المختارة فقط عند تغيير الفئات وعدم وجود فئة محددة
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(formData.category)) {
+      setFormData(prev => ({ ...prev, category: categories[0] }));
+    }
+  }, [categories, formData.category]);
 
   // التحقق من صحة البيانات
   const validateForm = (): boolean => {
@@ -94,18 +101,13 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
 
       onClose();
       
-      // إشعار نجاح بسيط
-      setTimeout(() => {
-        alert('✅ تم إضافة الكلمة بنجاح!');
-      }, 300);
-      
     } catch (error) {
       console.error('خطأ في إضافة الكلمة:', error);
       alert('❌ حدث خطأ أثناء إضافة الكلمة');
     }
   };
 
-  // معالج إضافة تصنيف جديد
+  // معالج إضافة تصنيف جديد - مُحسَّن للحفاظ على البيانات
   const handleAddCategory = () => {
     if (!newCategory.trim()) {
       alert('❌ يرجى إدخال اسم التصنيف');
@@ -117,14 +119,17 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
       return;
     }
 
-    addCategory(newCategory.trim());
-    setFormData(prev => ({ ...prev, category: newCategory.trim() }));
+    const trimmedCategory = newCategory.trim();
+    
+    // إضافة التصنيف الجديد
+    addCategory(trimmedCategory);
+    
+    // تحديث فئة النموذج للفئة الجديدة مع الحفاظ على باقي البيانات
+    setFormData(prev => ({ ...prev, category: trimmedCategory }));
+    
+    // إعادة تعيين حالة إضافة التصنيف
     setNewCategory('');
     setIsAddingCategory(false);
-    
-    setTimeout(() => {
-      alert('✅ تم إضافة التصنيف بنجاح!');
-    }, 300);
   };
 
   // معالج تغيير البيانات
@@ -249,36 +254,48 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
-                <input
-                  type="text"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="flex-1 bg-gray-700 border border-blue-500 rounded-2xl py-4 px-4 lg:px-5 text-white placeholder-gray-400 text-lg lg:text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all touch-manipulation"
-                  placeholder="اسم التصنيف الجديد"
-                  autoFocus
-                />
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="text"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    className="flex-1 bg-gray-700 border border-blue-500 rounded-2xl py-4 px-4 lg:px-5 text-white placeholder-gray-400 text-lg lg:text-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all touch-manipulation"
+                    placeholder="اسم التصنيف الجديد"
+                    autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCategory();
+                      }
+                    }}
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                    title="حفظ التصنيف"
+                  >
+                    <Plus size={20} />
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategory('');
+                    }}
+                    className="p-4 bg-gray-600 hover:bg-gray-700 text-white rounded-2xl transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                    title="إلغاء"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
                 
-                <button
-                  type="button"
-                  onClick={handleAddCategory}
-                  className="p-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl transition-all hover:scale-105 active:scale-95 touch-manipulation"
-                  title="حفظ التصنيف"
-                >
-                  <Plus size={20} />
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAddingCategory(false);
-                    setNewCategory('');
-                  }}
-                  className="p-4 bg-gray-600 hover:bg-gray-700 text-white rounded-2xl transition-all hover:scale-105 active:scale-95 touch-manipulation"
-                  title="إلغاء"
-                >
-                  <X size={20} />
-                </button>
+                <p className="text-gray-400 text-sm">
+                  💡 سيتم اختيار التصنيف الجديد تلقائياً عند الإضافة
+                </p>
               </div>
             )}
           </div>
@@ -289,48 +306,36 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
               مستوى الصعوبة
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {[
-                { value: 'سهل', color: 'bg-green-600 hover:bg-green-700', label: 'سهل' },
-                { value: 'متوسط', color: 'bg-yellow-600 hover:bg-yellow-700', label: 'متوسط' },
-                { value: 'صعب', color: 'bg-red-600 hover:bg-red-700', label: 'صعب' }
-              ].map((difficulty) => (
+              {(['سهل', 'متوسط', 'صعب'] as const).map((diff) => (
                 <button
-                  key={difficulty.value}
+                  key={diff}
                   type="button"
-                  onClick={() => handleInputChange('difficulty', difficulty.value as any)}
+                  onClick={() => handleInputChange('difficulty', diff)}
                   className={`
-                    py-4 px-4 rounded-2xl font-semibold text-white transition-all text-lg lg:text-xl
-                    hover:scale-105 active:scale-95 touch-manipulation
-                    ${formData.difficulty === difficulty.value 
-                      ? `${difficulty.color} ring-2 ring-white/50` 
-                      : 'bg-gray-700 hover:bg-gray-600'
+                    py-3 px-4 rounded-2xl font-medium transition-all touch-manipulation
+                    ${formData.difficulty === diff
+                      ? diff === 'سهل'
+                        ? 'bg-green-600 text-white border-2 border-green-500'
+                        : diff === 'متوسط'
+                        ? 'bg-yellow-600 text-white border-2 border-yellow-500'
+                        : 'bg-red-600 text-white border-2 border-red-500'
+                      : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:border-gray-500'
                     }
                   `}
                 >
-                  {difficulty.label}
+                  {diff}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Submit Buttons */}
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="py-4 lg:py-5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-2xl font-semibold text-lg lg:text-xl transition-all hover:scale-105 active:scale-95 touch-manipulation"
-            >
-              إلغاء
-            </button>
-            
-            <button
-              type="submit"
-              disabled={!formData.word.trim() || !formData.meaning.trim()}
-              className="py-4 lg:py-5 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-400 text-white rounded-2xl font-semibold text-lg lg:text-xl transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:hover:scale-100 touch-manipulation"
-            >
-              ✨ إضافة
-            </button>
-          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white py-4 lg:py-5 px-6 rounded-2xl font-semibold text-lg lg:text-xl transition-all hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
+          >
+            ✨ إضافة الكلمة
+          </button>
         </form>
       </div>
     </div>
