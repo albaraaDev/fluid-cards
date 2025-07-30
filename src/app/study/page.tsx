@@ -102,7 +102,7 @@ export default function StudyPage() {
 
     // Apply mastery filter
     if (filters.masteredOnly) {
-      filtered = filtered.filter((w) => w.correctCount >= 3);
+      filtered = filtered.filter((w) => w.repetition >= 3 && w.interval >= 21);
     } else if (!filters.needsReview) {
       // If not filtering for mastered only and not filtering for needs review, filter for needs review by default
       filtered = filtered.filter((w) => w.nextReview <= sessionTimestamp);
@@ -169,6 +169,7 @@ export default function StudyPage() {
       !showResult
     ) {
       const timer = setTimeout(() => {
+        // 🔥 إصلاح: الانتقال التلقائي بدون تحديث البيانات
         if (currentIndex < filteredWords.length - 1) {
           setCurrentIndex((prev) => prev + 1);
           setIsFlipped(false);
@@ -176,7 +177,7 @@ export default function StudyPage() {
         } else {
           setSessionComplete(true);
         }
-      }, 3000); // 3 seconds per word in reading mode
+      }, 4000); // زيادة الوقت إلى 4 ثوان
       return () => clearTimeout(timer);
     }
   }, [
@@ -217,7 +218,7 @@ export default function StudyPage() {
 
     // Apply mastery filter
     if (filters.masteredOnly) {
-      filtered = filtered.filter((w) => w.correctCount >= 3);
+      filtered = filtered.filter((w) => w.repetition >= 3 && w.interval >= 21);
     } else if (!filters.needsReview) {
       filtered = filtered.filter((w) => w.nextReview <= now);
     }
@@ -900,37 +901,66 @@ export default function StudyPage() {
         {/* Reading mode controls */}
         {currentMode === 'reading' && (
           <div className="text-center space-y-4">
+            {/* شرح نمط القراءة */}
+            <div className="bg-indigo-900/20 rounded-xl p-4 border border-indigo-800/30 mb-4">
+              <p className="text-indigo-300 text-sm">
+                📚 نمط القراءة السريعة: راجع الكلمات بصرياً ثم قيّم معرفتك بها
+              </p>
+            </div>
+
             <button
               onClick={() => setAutoAdvance(!autoAdvance)}
               className={`
-                flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all border touch-manipulation
-                ${
-                  autoAdvance
-                    ? 'bg-green-900/30 text-green-400 border-green-800/50'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
-                }
-              `}
+        flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all border touch-manipulation mx-auto
+        ${
+          autoAdvance
+            ? 'bg-green-900/30 text-green-400 border-green-800/50'
+            : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+        }
+      `}
             >
               {autoAdvance ? <Pause size={20} /> : <Play size={20} />}
-              <span>{autoAdvance ? 'إيقاف التلقائي' : 'تشغيل تلقائي'}</span>
+              <span>{autoAdvance ? 'إيقاف التقائي' : 'تشغيل تلقائي'}</span>
             </button>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* أزرار التقييم المحسنة */}
+            <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={() => handleAnswer(3)}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                onClick={() => handleAnswer(1)}
+                className="flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
               >
-                <CheckCircle size={20} />
-                <span>أعرفها</span>
+                <XCircle size={20} />
+                <span className="text-sm">لا أعرفها</span>
               </button>
 
               <button
-                onClick={() => handleAnswer(1)}
-                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                onClick={() => handleAnswer(3)}
+                className="flex flex-col items-center justify-center space-y-2 bg-yellow-600 hover:bg-yellow-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
               >
-                <XCircle size={20} />
-                <span>لا أعرفها</span>
+                <Clock size={20} />
+                <span className="text-sm">تحتاج وقت</span>
               </button>
+
+              <button
+                onClick={() => handleAnswer(5)}
+                className="flex flex-col items-center justify-center space-y-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+              >
+                <CheckCircle size={20} />
+                <span className="text-sm">أعرفها جيداً</span>
+              </button>
+            </div>
+
+            {/* زر تخطي بدون تقييم */}
+            <button
+              onClick={skipWord}
+              className="flex items-center justify-center space-x-2 bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-6 rounded-xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation mx-auto"
+            >
+              <SkipForward size={18} />
+              <span>تخطي بدون تقييم</span>
+            </button>
+
+            <div className="text-center text-xs text-gray-500 mt-2">
+              💡 نمط القراءة يساعد على المراجعة البصرية السريعة
             </div>
           </div>
         )}

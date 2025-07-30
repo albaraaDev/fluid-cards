@@ -39,7 +39,7 @@ const DetailedStats: React.FC<DetailedStatsProps> = ({ words }) => {
       }
       
       acc[category].total++;
-      if (word.correctCount >= 3) acc[category].mastered++;
+      if (word.repetition >= 3 && word.interval >= 21) acc[category].mastered++;
       acc[category].averageEaseFactor += word.easeFactor;
       acc[category].averageInterval += word.interval;
       acc[category].totalReviews += (word.correctCount + word.incorrectCount);

@@ -22,12 +22,13 @@ import React, { useMemo, useState } from 'react';
 
 export default function HomePage() {
   const { words, stats, updateWord, deleteWord, categories, addCategory } = useApp();
+  const [homeTimestamp] = useState(() => Date.now());
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
 
   // الكلمات العشوائية للمراجعة
   const randomUnmasteredWords = useMemo(() => {
-    const unmastered = words.filter(w => w.correctCount < 3);
+    const unmastered = words.filter(w => !(w.repetition >= 3 && w.interval >= 21));
     return unmastered
       .sort(() => Math.random() - 0.5)
       .slice(0, 6);

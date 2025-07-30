@@ -61,7 +61,7 @@ const DifficultyPieChart: React.FC<DifficultyPieChartProps> = ({ words, showMast
           acc[difficulty] = { total: 0, mastered: 0 };
         }
         acc[difficulty].total++;
-        if (word.correctCount >= 3) {
+        if (word.repetition >= 3 && word.interval >= 21) {
           acc[difficulty].mastered++;
         }
         return acc;

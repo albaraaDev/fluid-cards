@@ -14,33 +14,39 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
-  X
+  X,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 
 export default function CardsPage() {
   const { words, categories, updateWord, deleteWord, addCategory } = useApp();
-  
+
+  const [pageTimestamp] = useState(() => Date.now());
+
   // UI State
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('الكل');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyFilter>('all');
+  const [selectedDifficulty, setSelectedDifficulty] =
+    useState<DifficultyFilter>('all');
   const [sortBy, setSortBy] = useState<SortBy>('newest');
 
   // فلترة وترتيب الكلمات
   const filteredAndSortedWords = useMemo(() => {
-    const filtered = words.filter(word => {
-      const matchesSearch = word.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'الكل' || word.category === selectedCategory;
-      const matchesDifficulty = selectedDifficulty === 'all' || word.difficulty === selectedDifficulty;
-      
+    const filtered = words.filter((word) => {
+      const matchesSearch =
+        word.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        word.meaning.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === 'الكل' || word.category === selectedCategory;
+      const matchesDifficulty =
+        selectedDifficulty === 'all' || word.difficulty === selectedDifficulty;
+
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
 
@@ -50,14 +56,15 @@ export default function CardsPage() {
         case 'alphabetical':
           return a.word.localeCompare(b.word, 'ar');
         case 'difficulty':
-          const difficultyOrder = { 'سهل': 1, 'متوسط': 2, 'صعب': 3 };
+          const difficultyOrder = { سهل: 1, متوسط: 2, صعب: 3 };
           return difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty];
         case 'nextReview':
           return a.nextReview - b.nextReview;
+        case 'category':
+          return a.category.localeCompare(b.category, 'ar');
         case 'oldest':
           return a.id - b.id;
-        case 'newest':
-        default:
+        default: // newest
           return b.id - a.id;
       }
     });
@@ -68,9 +75,13 @@ export default function CardsPage() {
   // إحصائيات مفلترة
   const filteredStats = useMemo(() => {
     const total = filteredAndSortedWords.length;
-    const mastered = filteredAndSortedWords.filter(w => w.correctCount >= 3).length;
-    const needReview = filteredAndSortedWords.filter(w => w.nextReview <= Date.now()).length;
-    
+    const mastered = filteredAndSortedWords.filter(
+      (w) => w.correctCount >= 3
+    ).length;
+    const needReview = filteredAndSortedWords.filter(
+      (w) => w.nextReview <= Date.now()
+    ).length;
+
     return { total, mastered, needReview };
   }, [filteredAndSortedWords]);
 
@@ -90,9 +101,12 @@ export default function CardsPage() {
   };
 
   // مكون البطاقة
-  const WordCard: React.FC<{ word: Word; compact?: boolean }> = ({ word, compact = false }) => {
-    const isMastered = word.correctCount >= 3;
-    const needsReview = word.nextReview <= Date.now();
+  const WordCard: React.FC<{ word: Word; compact?: boolean }> = ({
+    word,
+    compact = false,
+  }) => {
+    const isMastered = word.repetition >= 3 && word.interval >= 21;
+    const needsReview = word.nextReview <= pageTimestamp;
 
     return (
       <div
@@ -143,20 +157,27 @@ export default function CardsPage() {
         {/* Footer */}
         <div className="flex items-center justify-between">
           {/* Difficulty Badge */}
-          <span className={`
+          <span
+            className={`
             text-xs lg:text-sm px-3 py-1 rounded-full font-medium
-            ${word.difficulty === 'سهل' ? 'bg-green-900/30 text-green-400 border border-green-800/50' :
-              word.difficulty === 'متوسط' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50' :
-              'bg-red-900/30 text-red-400 border border-red-800/50'
+            ${
+              word.difficulty === 'سهل'
+                ? 'bg-green-900/30 text-green-400 border border-green-800/50'
+                : word.difficulty === 'متوسط'
+                ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50'
+                : 'bg-red-900/30 text-red-400 border border-red-800/50'
             }
-          `}>
+          `}
+          >
             {word.difficulty}
           </span>
 
           {/* Status & Category */}
           <div className="flex items-center space-x-2 text-xs lg:text-sm text-gray-500">
             {isMastered && <span className="text-green-400">✓ محفوظة</span>}
-            {needsReview && !isMastered && <span className="text-orange-400">⏰ للمراجعة</span>}
+            {needsReview && !isMastered && (
+              <span className="text-orange-400">⏰ للمراجعة</span>
+            )}
             <span>•</span>
             <span>{word.category}</span>
           </div>
@@ -176,13 +197,15 @@ export default function CardsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-      
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 lg:mb-8 space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">البطاقات التعليمية</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
+            البطاقات التعليمية
+          </h1>
           <p className="text-gray-400">
-            {filteredStats.total} بطاقة • {filteredStats.mastered} محفوظة • {filteredStats.needReview} تحتاج مراجعة
+            {filteredStats.total} بطاقة • {filteredStats.mastered} محفوظة •{' '}
+            {filteredStats.needReview} تحتاج مراجعة
           </p>
         </div>
 
@@ -193,8 +216,8 @@ export default function CardsPage() {
             <button
               onClick={() => setViewMode('grid')}
               className={`p-3 rounded-lg transition-all ${
-                viewMode === 'grid' 
-                  ? 'bg-gray-700 text-blue-400 shadow-sm' 
+                viewMode === 'grid'
+                  ? 'bg-gray-700 text-blue-400 shadow-sm'
                   : 'text-gray-400 hover:text-gray-300'
               } touch-manipulation`}
             >
@@ -203,8 +226,8 @@ export default function CardsPage() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-3 rounded-lg transition-all ${
-                viewMode === 'list' 
-                  ? 'bg-gray-700 text-blue-400 shadow-sm' 
+                viewMode === 'list'
+                  ? 'bg-gray-700 text-blue-400 shadow-sm'
                   : 'text-gray-400 hover:text-gray-300'
               } touch-manipulation`}
             >
@@ -216,8 +239,8 @@ export default function CardsPage() {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-3 rounded-xl transition-all border touch-manipulation ${
-              showFilters 
-                ? 'bg-blue-900/30 text-blue-400 border-blue-800/50' 
+              showFilters
+                ? 'bg-blue-900/30 text-blue-400 border-blue-800/50'
                 : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300'
             }`}
           >
@@ -228,7 +251,10 @@ export default function CardsPage() {
 
       {/* Search Bar */}
       <div className="relative mb-6">
-        <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <Search
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+          size={20}
+        />
         <input
           type="text"
           placeholder="البحث في الكلمات والمعاني..."
@@ -262,7 +288,9 @@ export default function CardsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">التصنيف</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                التصنيف
+              </label>
               <div className="relative">
                 <select
                   value={selectedCategory}
@@ -270,21 +298,30 @@ export default function CardsPage() {
                   className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
                 >
                   <option value="الكل">جميع التصنيفات</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <ChevronDown
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
 
             {/* Difficulty Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">مستوى الصعوبة</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                مستوى الصعوبة
+              </label>
               <div className="relative">
                 <select
                   value={selectedDifficulty}
-                  onChange={(e) => setSelectedDifficulty(e.target.value as DifficultyFilter)}
+                  onChange={(e) =>
+                    setSelectedDifficulty(e.target.value as DifficultyFilter)
+                  }
                   className="w-full bg-gray-700 border border-gray-600 rounded-xl py-3 px-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
                 >
                   <option value="all">جميع المستويات</option>
@@ -292,13 +329,18 @@ export default function CardsPage() {
                   <option value="متوسط">متوسط</option>
                   <option value="صعب">صعب</option>
                 </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <ChevronDown
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
 
             {/* Sort Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">الترتيب</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                الترتيب
+              </label>
               <div className="relative">
                 <select
                   value={sortBy}
@@ -311,7 +353,10 @@ export default function CardsPage() {
                   <option value="difficulty">حسب الصعوبة</option>
                   <option value="nextReview">موعد المراجعة</option>
                 </select>
-                <ChevronDown className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <ChevronDown
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={16}
+                />
               </div>
             </div>
           </div>
@@ -320,17 +365,15 @@ export default function CardsPage() {
 
       {/* Cards Grid/List */}
       {filteredAndSortedWords.length > 0 ? (
-        <div className={
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6'
-            : 'space-y-4'
-        }>
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6'
+              : 'space-y-4'
+          }
+        >
           {filteredAndSortedWords.map((word) => (
-            <WordCard 
-              key={word.id} 
-              word={word} 
-              compact={viewMode === 'list'} 
-            />
+            <WordCard key={word.id} word={word} compact={viewMode === 'list'} />
           ))}
         </div>
       ) : (
