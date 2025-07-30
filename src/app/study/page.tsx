@@ -4,7 +4,11 @@
 import StudyFilters from '@/components/study/StudyFilters';
 import StudyModeSelector from '@/components/study/StudyModeSelector';
 import { useApp } from '@/context/AppContext';
-import { StudyFilters as StudyFiltersType, StudyMode } from '@/types/flashcard';
+import {
+  StudyFilters as StudyFiltersType,
+  StudyMode,
+  Word,
+} from '@/types/flashcard';
 import {
   ArrowRight,
   CheckCircle,
@@ -41,6 +45,7 @@ export default function StudyPage() {
   });
 
   // Session State
+  const [sessionWords, setSessionWords] = useState<Word[]>([]); // الكلمات المجمدة للجلسة
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionStats, setSessionStats] = useState({
@@ -50,20 +55,30 @@ export default function StudyPage() {
     maxStreak: 0,
   });
   const [showResult, setShowResult] = useState(false);
+  const [currentWordResult, setCurrentWordResult] = useState<boolean | null>(
+    null
+  );
   const [sessionComplete, setSessionComplete] = useState(false);
 
   // Speed Mode State
   const [timeLeft, setTimeLeft] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
+  const [sessionTimestamp, setSessionTimestamp] = useState<number>(Date.now());
 
   // Get unique categories
   const categories = useMemo(() => {
     return Array.from(new Set(words.map((w) => w.category)));
   }, [words]);
 
-  // Apply filters to words
+  // Apply filters to words (only for preview, not during active session)
   const filteredWords = useMemo(() => {
+    // إذا كانت الجلسة نشطة، استخدم الكلمات المجمدة
+    if (isStudyActive && sessionWords.length > 0) {
+      return sessionWords;
+    }
+
+    // وإلا احسب الفلترة العادية للمعاينة
     let filtered = [...words];
 
     // Apply category filter
@@ -80,37 +95,46 @@ export default function StudyPage() {
       );
     }
 
-    // Apply review status filter
+    // Apply review status filter - استخدم sessionTimestamp بدلاً من Date.now()
     if (filters.needsReview) {
-      filtered = filtered.filter((w) => w.nextReview <= Date.now());
+      filtered = filtered.filter((w) => w.nextReview <= sessionTimestamp);
     }
 
     // Apply mastery filter
     if (filters.masteredOnly) {
-      filtered = filtered.filter((w) => w.correctCount >= 3);
+      filtered = filtered.filter((w) => w.repetition >= 3 && w.interval >= 21);
     } else if (!filters.needsReview) {
       // If not filtering for mastered only and not filtering for needs review, filter for needs review by default
-      filtered = filtered.filter((w) => w.nextReview <= Date.now());
+      filtered = filtered.filter((w) => w.nextReview <= sessionTimestamp);
     }
 
     // Apply sorting
     if (filters.hardestFirst) {
       filtered.sort((a, b) => a.easeFactor - b.easeFactor);
     } else if (filters.randomOrder) {
-      filtered.sort(() => Math.random() - 0.5);
+      // إنشاء نسخة مختلطة بناءً على sessionTimestamp للاستقرار
+      const seed = sessionTimestamp % 1000000;
+      filtered.sort((a, b) => {
+        // استخدام seed ثابت للترتيب العشوائي المستقر
+        const hashA = ((a.id * seed) % 1000) / 1000;
+        const hashB = ((b.id * seed) % 1000) / 1000;
+        return hashA - hashB;
+      });
     } else {
       // Default: prioritize words that need review and have low ease factor
       filtered.sort((a, b) => {
         const aScore =
-          (a.nextReview <= Date.now() ? 100 : 0) + (5 - a.easeFactor) * 10;
+          (a.nextReview <= sessionTimestamp ? 100 : 0) +
+          (5 - a.easeFactor) * 10;
         const bScore =
-          (b.nextReview <= Date.now() ? 100 : 0) + (5 - b.easeFactor) * 10;
+          (b.nextReview <= sessionTimestamp ? 100 : 0) +
+          (5 - b.easeFactor) * 10;
         return bScore - aScore;
       });
     }
 
     return filtered;
-  }, [words, filters]);
+  }, [words, filters, sessionTimestamp, isStudyActive, sessionWords]);
 
   const currentWord = filteredWords[currentIndex];
 
@@ -145,6 +169,7 @@ export default function StudyPage() {
       !showResult
     ) {
       const timer = setTimeout(() => {
+        // 🔥 إصلاح: الانتقال التلقائي بدون تحديث البيانات
         if (currentIndex < filteredWords.length - 1) {
           setCurrentIndex((prev) => prev + 1);
           setIsFlipped(false);
@@ -152,7 +177,7 @@ export default function StudyPage() {
         } else {
           setSessionComplete(true);
         }
-      }, 3000); // 3 seconds per word in reading mode
+      }, 4000); // زيادة الوقت إلى 4 ثوان
       return () => clearTimeout(timer);
     }
   }, [
@@ -166,15 +191,70 @@ export default function StudyPage() {
 
   // Reset session when starting study
   const startStudy = useCallback(() => {
+    const now = Date.now(); // احصل على الوقت مرة واحدة فقط
+    setSessionTimestamp(now); // حدث الـ timestamp
+
+    // احسب الكلمات المفلترة وجمدها للجلسة
+    let filtered = [...words];
+
+    // Apply category filter
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter((w) =>
+        filters.categories.includes(w.category)
+      );
+    }
+
+    // Apply difficulty filter
+    if (filters.difficulties.length > 0) {
+      filtered = filtered.filter((w) =>
+        filters.difficulties.includes(w.difficulty)
+      );
+    }
+
+    // Apply review status filter
+    if (filters.needsReview) {
+      filtered = filtered.filter((w) => w.nextReview <= now);
+    }
+
+    // Apply mastery filter
+    if (filters.masteredOnly) {
+      filtered = filtered.filter((w) => w.repetition >= 3 && w.interval >= 21);
+    } else if (!filters.needsReview) {
+      filtered = filtered.filter((w) => w.nextReview <= now);
+    }
+
+    // Apply sorting
+    if (filters.hardestFirst) {
+      filtered.sort((a, b) => a.easeFactor - b.easeFactor);
+    } else if (filters.randomOrder) {
+      const seed = now % 1000000;
+      filtered.sort((a, b) => {
+        const hashA = ((a.id * seed) % 1000) / 1000;
+        const hashB = ((b.id * seed) % 1000) / 1000;
+        return hashA - hashB;
+      });
+    } else {
+      filtered.sort((a, b) => {
+        const aScore =
+          (a.nextReview <= now ? 100 : 0) + (5 - a.easeFactor) * 10;
+        const bScore =
+          (b.nextReview <= now ? 100 : 0) + (5 - b.easeFactor) * 10;
+        return bScore - aScore;
+      });
+    }
+
+    // جمد الكلمات للجلسة
+    setSessionWords(filtered);
     setIsStudyActive(true);
     setCurrentIndex(0);
     setIsFlipped(false);
     setSessionStats({ correct: 0, incorrect: 0, streak: 0, maxStreak: 0 });
     setShowResult(false);
+    setCurrentWordResult(null);
     setSessionComplete(false);
-    setTimeLeft(currentMode === 'speed' ? 10 : 0); // 10 seconds for speed mode
+    setTimeLeft(currentMode === 'speed' ? 10 : 0);
     setAutoAdvance(currentMode === 'reading');
-  }, [currentMode]);
+  }, [words, filters, currentMode]);
 
   // Handle answer based on study mode
   const handleAnswer = (quality: number) => {
@@ -183,6 +263,10 @@ export default function StudyPage() {
     updateProgressWithQuality(currentWord.id, quality);
 
     const isCorrect = quality >= 3;
+
+    // حفظ نتيجة الكلمة الحالية للـ overlay
+    setCurrentWordResult(isCorrect);
+
     const newStreak = isCorrect ? sessionStats.streak + 1 : 0;
 
     setSessionStats((prev) => ({
@@ -203,6 +287,7 @@ export default function StudyPage() {
         setCurrentIndex((prev) => prev + 1);
         setIsFlipped(false);
         setShowResult(false);
+        setCurrentWordResult(null); // إعادة تعيين النتيجة
         setTimeLeft(currentMode === 'speed' ? 10 : 0);
       } else {
         setSessionComplete(true);
@@ -224,13 +309,27 @@ export default function StudyPage() {
 
   // Restart session
   const restartSession = () => {
+    // إعادة استخدام نفس الكلمات المجمدة
     setCurrentIndex(0);
     setIsFlipped(false);
     setSessionStats({ correct: 0, incorrect: 0, streak: 0, maxStreak: 0 });
     setShowResult(false);
+    setCurrentWordResult(null);
     setSessionComplete(false);
     setTimeLeft(currentMode === 'speed' ? 10 : 0);
     setAutoAdvance(currentMode === 'reading');
+    // لا نحدث sessionWords - نبقي نفس القائمة المجمدة
+  };
+
+  const endSession = () => {
+    setIsStudyActive(false);
+    setSessionWords([]); // مسح الكلمات المجمدة
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setSessionStats({ correct: 0, incorrect: 0, streak: 0, maxStreak: 0 });
+    setShowResult(false);
+    setCurrentWordResult(null);
+    setSessionComplete(false);
   };
 
   // Get difficulty color
@@ -313,7 +412,7 @@ export default function StudyPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button
-              onClick={() => setIsStudyActive(false)}
+              onClick={endSession}
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white px-8 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
             >
               <Settings size={20} />
@@ -423,7 +522,7 @@ export default function StudyPage() {
             </button>
 
             <button
-              onClick={() => setIsStudyActive(false)}
+              onClick={endSession}
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 px-8 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
             >
               <Settings size={20} />
@@ -555,15 +654,11 @@ export default function StudyPage() {
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-3xl">
             <div
               className={`
-              w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center shadow-2xl
-              ${
-                sessionStats.correct > sessionStats.incorrect
-                  ? 'bg-green-500'
-                  : 'bg-red-500'
-              }
-            `}
+        w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center shadow-2xl
+        ${currentWordResult ? 'bg-green-500' : 'bg-red-500'}
+      `}
             >
-              {sessionStats.correct > sessionStats.incorrect ? (
+              {currentWordResult ? (
                 <CheckCircle size={48} className="text-white lg:w-16 lg:h-16" />
               ) : (
                 <XCircle size={48} className="text-white lg:w-16 lg:h-16" />
@@ -806,37 +901,66 @@ export default function StudyPage() {
         {/* Reading mode controls */}
         {currentMode === 'reading' && (
           <div className="text-center space-y-4">
+            {/* شرح نمط القراءة */}
+            <div className="bg-indigo-900/20 rounded-xl p-4 border border-indigo-800/30 mb-4">
+              <p className="text-indigo-300 text-sm">
+                📚 نمط القراءة السريعة: راجع الكلمات بصرياً ثم قيّم معرفتك بها
+              </p>
+            </div>
+
             <button
               onClick={() => setAutoAdvance(!autoAdvance)}
               className={`
-                flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all border touch-manipulation
-                ${
-                  autoAdvance
-                    ? 'bg-green-900/30 text-green-400 border-green-800/50'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
-                }
-              `}
+        flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all border touch-manipulation mx-auto
+        ${
+          autoAdvance
+            ? 'bg-green-900/30 text-green-400 border-green-800/50'
+            : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+        }
+      `}
             >
               {autoAdvance ? <Pause size={20} /> : <Play size={20} />}
-              <span>{autoAdvance ? 'إيقاف التلقائي' : 'تشغيل تلقائي'}</span>
+              <span>{autoAdvance ? 'إيقاف التقائي' : 'تشغيل تلقائي'}</span>
             </button>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* أزرار التقييم المحسنة */}
+            <div className="grid grid-cols-3 gap-3">
               <button
-                onClick={() => handleAnswer(3)}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                onClick={() => handleAnswer(1)}
+                className="flex flex-col items-center justify-center space-y-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
               >
-                <CheckCircle size={20} />
-                <span>أعرفها</span>
+                <XCircle size={20} />
+                <span className="text-sm">لا أعرفها</span>
               </button>
 
               <button
-                onClick={() => handleAnswer(1)}
-                className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+                onClick={() => handleAnswer(3)}
+                className="flex flex-col items-center justify-center space-y-2 bg-yellow-600 hover:bg-yellow-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
               >
-                <XCircle size={20} />
-                <span>لا أعرفها</span>
+                <Clock size={20} />
+                <span className="text-sm">تحتاج وقت</span>
               </button>
+
+              <button
+                onClick={() => handleAnswer(5)}
+                className="flex flex-col items-center justify-center space-y-2 bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation"
+              >
+                <CheckCircle size={20} />
+                <span className="text-sm">أعرفها جيداً</span>
+              </button>
+            </div>
+
+            {/* زر تخطي بدون تقييم */}
+            <button
+              onClick={skipWord}
+              className="flex items-center justify-center space-x-2 bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-6 rounded-xl font-medium transition-all hover:scale-105 active:scale-95 touch-manipulation mx-auto"
+            >
+              <SkipForward size={18} />
+              <span>تخطي بدون تقييم</span>
+            </button>
+
+            <div className="text-center text-xs text-gray-500 mt-2">
+              💡 نمط القراءة يساعد على المراجعة البصرية السريعة
             </div>
           </div>
         )}
