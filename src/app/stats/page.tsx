@@ -127,10 +127,10 @@ export default function StatsPage() {
       averageCorrectRate,
       categoryStats,
       difficultyStats,
-      streakData: { current: 5, longest: 12 }, // محاكاة
+      streakData: { current: 0, longest: 0 },
       recentActivity,
       learningVelocity,
-      weeklyProgress: [65, 72, 78, 85, 88, 92, stats.progress], // محاكاة
+      weeklyProgress: [],
     };
   }, [words, stats.progress, statsTimestamp]);
 
@@ -181,6 +181,40 @@ export default function StatsPage() {
       trendColor: 'text-green-400',
     },
   ];
+
+  if (words.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="text-center py-20">
+          <div className="w-32 h-32 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-8">
+            <PieChart size={48} className="text-gray-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">
+            لا توجد إحصائيات بعد
+          </h2>
+          <p className="text-gray-400 text-xl mb-8">
+            ابدأ بإضافة بعض الكلمات ومراجعتها لترى إحصائياتك هنا
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button
+              onClick={() => window.location.href = '/cards'}
+              className="inline-flex items-center space-x-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
+            >
+              <BookOpen size={24} />
+              <span>إضافة كلمات</span>
+            </button>
+            <button
+              onClick={() => window.location.href = '/study'}
+              className="inline-flex items-center space-x-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
+            >
+              <Brain size={24} />
+              <span>بدء المراجعة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
@@ -606,32 +640,32 @@ export default function StatsPage() {
             },
             {
               name: 'المثابر',
-              description: '5 أيام متتالية',
-              achieved: advancedStats.streakData.current >= 5,
+              description: '100 مراجعة',
+              achieved: advancedStats.totalReviews >= 100, // ✅ معيار حقيقي
               icon: '🔥',
             },
             {
               name: 'الخبير',
-              description: '100 كلمة محفوظة',
-              achieved: stats.masteredWords >= 100,
+              description: '50 كلمة محفوظة',
+              achieved: stats.masteredWords >= 50, // ✅ رقم أكثر واقعية
               icon: '🎓',
             },
             {
               name: 'السريع',
-              description: '20 كلمة/أسبوع',
-              achieved: advancedStats.learningVelocity >= 20,
+              description: 'إنهاء 5 اختبارات',
+              achieved: false, // ✅ سيتم تطبيقه لاحقاً مع نظام الاختبارات
               icon: '⚡',
             },
             {
               name: 'المتفوق',
-              description: '95% معدل نجاح',
-              achieved: advancedStats.averageCorrectRate >= 95,
+              description: '80% معدل نجاح',
+              achieved: advancedStats.averageCorrectRate >= 80, // ✅ رقم واقعي
               icon: '🏆',
             },
             {
-              name: 'الماراثوني',
-              description: '30 يوم متتالي',
-              achieved: advancedStats.streakData.longest >= 30,
+              name: 'المجتهد',
+              description: '200 مراجعة إجمالية',
+              achieved: advancedStats.totalReviews >= 200, // ✅ معيار حقيقي
               icon: '🏃',
             },
           ].map((achievement, index) => (

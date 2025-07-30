@@ -24,6 +24,9 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ words, weeks = 12 }) 
 
   // إنشاء بيانات النشاط اليومي
   const activityData = useMemo(() => {
+    if (words.length === 0) {
+      return []; // ✅ مصفوفة فارغة للمستخدم الجديد
+    }
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - (weeks * 7));
