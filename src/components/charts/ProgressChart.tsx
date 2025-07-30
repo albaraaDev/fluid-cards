@@ -3,7 +3,7 @@
 
 import { Word } from '@/types/flashcard';
 import React, { useMemo } from 'react';
-import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface ProgressChartProps {
   words: Word[];
@@ -31,34 +31,41 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ words, days = 30 }) => {
     
     const data: ProgressDataPoint[] = [];
     
+    // إضافة createdAt للكلمات التي لا تملكه (الكلمات القديمة)
+    const wordsWithCreatedAt = words.map(word => ({
+      ...word,
+      createdAt: word.id > 1000000000000 ? word.id : Date.now() - (word.id * 24 * 60 * 60 * 1000) // محاكاة تاريخ الإنشاء للكلمات القديمة
+    }));
+
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const currentDate = new Date(d);
+      const currentTimestamp = currentDate.getTime();
       const dateStr = currentDate.toISOString().split('T')[0];
       const displayDate = currentDate.toLocaleDateString('ar-SA', { 
         month: 'short', 
         day: 'numeric' 
       });
       
-      // الكلمات الموجودة في هذا التاريخ
-      const wordsAtDate = words.filter(word => word.id <= currentDate.getTime());
+      // الكلمات الموجودة في هذا التاريخ (المُنشأة قبل أو في هذا اليوم)
+      const wordsAtDate = wordsWithCreatedAt.filter(word => word.createdAt <= currentTimestamp);
       
-      // الكلمات المحفوظة في هذا التاريخ
-      const masteredAtDate = wordsAtDate.filter(word => {
-        // محاكاة: اعتبار الكلمة محفوظة إذا كانت موجودة لأكثر من 7 أيام ولديها تكرارات
-        const daysSinceCreation = (currentDate.getTime() - word.id) / (24 * 60 * 60 * 1000);
-        return daysSinceCreation > 7 && word.repetition >= 3;
-      });
+      // الكلمات المحفوظة حالياً (بناءً على الحالة الحقيقية)
+      const masteredAtDate = wordsAtDate.filter(word => word.repetition >= 3 && word.interval >= 21);
       
       // الكلمات الجديدة في هذا اليوم
-      const newWordsToday = words.filter(word => {
-        const wordDate = new Date(word.id);
-        return wordDate.toDateString() === currentDate.toDateString();
+      const dayStart = new Date(currentDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(23, 59, 59, 999);
+      
+      const newWordsToday = wordsWithCreatedAt.filter(word => {
+        return word.createdAt >= dayStart.getTime() && word.createdAt <= dayEnd.getTime();
       });
       
-      // المراجعات في هذا اليوم (محاكاة)
-      const reviewsToday = wordsAtDate.filter(word => {
-        const lastReviewed = new Date(word.lastReviewed);
-        return lastReviewed.toDateString() === currentDate.toDateString();
+      // المراجعات في هذا اليوم (بناءً على lastReviewed)
+      const reviewsToday = wordsWithCreatedAt.filter(word => {
+        const lastReviewedDate = new Date(word.lastReviewed);
+        return lastReviewedDate.toDateString() === currentDate.toDateString();
       });
       
       // متوسط عامل السهولة
@@ -116,12 +123,33 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ words, days = 30 }) => {
               <span className="text-gray-400">عامل السهولة:</span>
               <span className="text-indigo-400 font-bold">{data.averageEaseFactor}</span>
             </div>
+            {data.reviewSessions > 0 && (
+              <div className="flex items-center justify-between space-x-4">
+                <span className="text-gray-400">مراجعات:</span>
+                <span className="text-orange-400 font-bold">{data.reviewSessions}</span>
+              </div>
+            )}
           </div>
         </div>
       );
     }
     return null;
   };
+
+  // إذا لم توجد بيانات كافية
+  if (words.length === 0) {
+    return (
+      <div className="w-full h-80 lg:h-96 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gray-700 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+            📊
+          </div>
+          <h3 className="text-white font-semibold mb-2">لا توجد بيانات</h3>
+          <p className="text-gray-400 text-sm">أضف كلمات لرؤية تطور التعلم</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-80 lg:h-96">
@@ -178,18 +206,20 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ words, days = 30 }) => {
             strokeWidth={2}
             fill="url(#masteredGradient)"
           />
-          
-          {/* خط التقدم */}
-          <Line
-            type="monotone"
-            dataKey="progress"
-            stroke="#8B5CF6"
-            strokeWidth={3}
-            dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: '#8B5CF6', strokeWidth: 2, fill: '#1F2937' }}
-          />
         </AreaChart>
       </ResponsiveContainer>
+      
+      {/* مؤشر البيانات */}
+      <div className="flex items-center justify-center space-x-6 mt-4 text-sm">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span className="text-gray-400">إجمالي الكلمات</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <span className="text-gray-400">كلمات محفوظة</span>
+        </div>
+      </div>
     </div>
   );
 };

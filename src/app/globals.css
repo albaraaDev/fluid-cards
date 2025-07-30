@@ -163,6 +163,10 @@
   }
 }
 
+button {
+  cursor: pointer;
+}
+
 .animate-in {
   animation-fill-mode: both;
 }

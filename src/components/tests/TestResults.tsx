@@ -748,15 +748,6 @@ export default function TestResults({
             <RefreshCw size={24} />
             <span>إعادة الاختبار</span>
           </button>
-          
-          <button
-            onClick={onReviewAnswers}
-            className="w-full sm:w-auto flex items-center justify-center space-x-3 bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
-          >
-            <Eye size={24} />
-            <span>مراجعة تفصيلية</span>
-          </button>
-          
           <button
             onClick={onBackToTests}
             className="w-full sm:w-auto flex items-center justify-center space-x-3 bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105 active:scale-95"

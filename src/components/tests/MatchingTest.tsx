@@ -70,12 +70,17 @@ export default function MatchingTest({
   // Reset animation when question changes
   useEffect(() => {
     setHasAnimated(false);
+    const userMatches = JSON.parse(userAnswer || '{}') as Record<
+      string,
+      string
+    >;
     setMatches(userMatches);
     setSelectedWord(null);
     const timer = setTimeout(() => setHasAnimated(true), 200);
     return () => clearTimeout(timer);
-  }, [question.id, userMatches]);
+  }, [question.id, userAnswer]);
 
+  // Update connector lines when matches change
   // Update connector lines when matches change
   useEffect(() => {
     updateConnectorLines();
@@ -366,7 +371,9 @@ export default function MatchingTest({
               return (
                 <div
                   key={`word-${index}`}
-                  ref={(el) => { wordsRef.current[index] = el; }}
+                  ref={(el) => {
+                    wordsRef.current[index] = el;
+                  }}
                   draggable={!isCompleted && !showResult}
                   onDragStart={(e) => handleDragStart(e, word, 'word', index)}
                   onDragEnd={handleDragEnd}
@@ -459,7 +466,9 @@ export default function MatchingTest({
               return (
                 <div
                   key={`meaning-${index}`}
-                  ref={(el) => { meaningsRef.current[index] = el; }}
+                  ref={(el) => {
+                    meaningsRef.current[index] = el;
+                  }}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, meaning, 'meaning')}
                   onClick={() => handleItemSelect(meaning, 'meaning')}

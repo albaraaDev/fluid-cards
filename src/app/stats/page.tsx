@@ -8,6 +8,7 @@ import ProgressChart from '@/components/charts/ProgressChart';
 import { useApp } from '@/context/AppContext';
 import {
   Activity,
+  AlertCircle,
   Award,
   BookOpen,
   Brain,
@@ -19,6 +20,7 @@ import {
   Target,
   TrendingUp,
   Users,
+  X,
   Zap,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
@@ -29,6 +31,7 @@ export default function StatsPage() {
     'overview' | 'charts' | 'detailed'
   >('overview');
   const [statsTimestamp] = useState(() => Date.now());
+  const [showSM2Modal, setShowSM2Modal] = useState(false);
 
   // إحصائيات متقدمة
   const advancedStats = useMemo(() => {
@@ -144,8 +147,6 @@ export default function StatsPage() {
       borderColor: 'border-blue-800/50',
       textColor: 'text-blue-400',
       iconColor: 'text-blue-400',
-      trend: '+12%',
-      trendColor: 'text-green-400',
     },
     {
       title: 'كلمات محفوظة',
@@ -155,8 +156,6 @@ export default function StatsPage() {
       borderColor: 'border-green-800/50',
       textColor: 'text-green-400',
       iconColor: 'text-green-400',
-      trend: '+8%',
-      trendColor: 'text-green-400',
     },
     {
       title: 'معدل النجاح',
@@ -166,8 +165,6 @@ export default function StatsPage() {
       borderColor: 'border-purple-800/50',
       textColor: 'text-purple-400',
       iconColor: 'text-purple-400',
-      trend: '+5%',
-      trendColor: 'text-green-400',
     },
     {
       title: 'إجمالي المراجعات',
@@ -177,11 +174,8 @@ export default function StatsPage() {
       borderColor: 'border-orange-800/50',
       textColor: 'text-orange-400',
       iconColor: 'text-orange-400',
-      trend: '+15%',
-      trendColor: 'text-green-400',
     },
   ];
-
   if (words.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
@@ -197,14 +191,14 @@ export default function StatsPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button
-              onClick={() => window.location.href = '/cards'}
+              onClick={() => (window.location.href = '/cards')}
               className="inline-flex items-center space-x-3 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
             >
               <BookOpen size={24} />
               <span>إضافة كلمات</span>
             </button>
             <button
-              onClick={() => window.location.href = '/study'}
+              onClick={() => (window.location.href = '/study')}
               className="inline-flex items-center space-x-3 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
             >
               <Brain size={24} />
@@ -240,7 +234,7 @@ export default function StatsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`
-                  flex items-center space-x-2 px-4 lg:px-6 py-3 lg:py-4 rounded-xl font-semibold transition-all touch-manipulation
+                  flex items-center sm:space-x-2 px-4 lg:px-6 py-3 lg:py-4 rounded-xl font-semibold transition-all touch-manipulation
                   ${
                     activeTab === tab.id
                       ? 'bg-blue-600 text-white shadow-lg'
@@ -260,7 +254,7 @@ export default function StatsPage() {
       {activeTab === 'overview' && (
         <>
           {/* Main Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
             {mainStatCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
@@ -277,12 +271,6 @@ export default function StatsPage() {
                         className={`lg:w-6 lg:h-6 ${stat.iconColor}`}
                       />
                     </div>
-                    <div
-                      className={`text-xs lg:text-sm font-medium ${stat.trendColor} flex items-center space-x-1`}
-                    >
-                      <TrendingUp size={12} />
-                      <span>{stat.trend}</span>
-                    </div>
                   </div>
                   <div
                     className={`text-2xl lg:text-3xl font-bold ${stat.textColor} mb-1`}
@@ -297,162 +285,130 @@ export default function StatsPage() {
             })}
           </div>
 
-          {/* Progress Overview */}
-          <div className="bg-gray-800 rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-gray-700 mb-8 lg:mb-12">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <TrendingUp className="text-purple-400" size={24} />
-                <h3 className="text-xl lg:text-2xl font-bold text-white">
-                  نظرة عامة على التقدم
-                </h3>
+          <div className="grid lg:grid-cols-2 gap-4">
+            {/* Progress Overview */}
+            <div className="bg-gray-800 rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-gray-700 mb-8 lg:mb-12">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <TrendingUp className="text-purple-400" size={24} />
+                  <h3 className="text-xl lg:text-2xl font-bold text-white">
+                    نظرة عامة على التقدم
+                  </h3>
+                </div>
+                <span className="text-3xl lg:text-4xl font-bold text-purple-400">
+                  {stats.progress.toFixed(0)}%
+                </span>
               </div>
-              <span className="text-3xl lg:text-4xl font-bold text-purple-400">
-                {stats.progress.toFixed(0)}%
-              </span>
+
+              <div className="w-full bg-gray-700 rounded-full h-4 lg:h-6 mb-6">
+                <div
+                  className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+                  style={{ width: `${stats.progress}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-blue-400 mb-1">
+                    {stats.totalWords - stats.masteredWords}
+                  </div>
+                  <div className="text-sm lg:text-base text-gray-400">
+                    قيد التعلم
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-green-400 mb-1">
+                    {stats.masteredWords}
+                  </div>
+                  <div className="text-sm lg:text-base text-gray-400">
+                    محفوظة
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-orange-400 mb-1">
+                    {stats.wordsNeedingReview}
+                  </div>
+                  <div className="text-sm lg:text-base text-gray-400">
+                    تحتاج مراجعة
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="w-full bg-gray-700 rounded-full h-4 lg:h-6 mb-6">
-              <div
-                className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
-                style={{ width: `${stats.progress}%` }}
-              >
-                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl lg:text-3xl font-bold text-blue-400 mb-1">
-                  {stats.totalWords - stats.masteredWords}
+            {/* SM-2 Algorithm Insights */}
+            <div className="bg-gray-800 rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-gray-700 mb-8 lg:mb-12">
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center space-x-3">
+                  <Brain className="text-purple-400" size={24} />
+                  <h3 className="text-xl lg:text-2xl font-bold text-white">
+                    ذكاء التكرار المتباعد
+                  </h3>
                 </div>
-                <div className="text-sm lg:text-base text-gray-400">
-                  قيد التعلم
-                </div>
-              </div>
-              <div>
-                <div className="text-2xl lg:text-3xl font-bold text-green-400 mb-1">
-                  {stats.masteredWords}
-                </div>
-                <div className="text-sm lg:text-base text-gray-400">محفوظة</div>
-              </div>
-              <div>
-                <div className="text-2xl lg:text-3xl font-bold text-orange-400 mb-1">
-                  {stats.wordsNeedingReview}
-                </div>
-                <div className="text-sm lg:text-base text-gray-400">
-                  تحتاج مراجعة
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SM-2 Algorithm Insights */}
-          <div className="bg-gray-800 rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-gray-700 mb-8 lg:mb-12">
-            <div className="flex items-center space-x-3 mb-6">
-              <Brain className="text-purple-400" size={24} />
-              <h3 className="text-xl lg:text-2xl font-bold text-white">
-                ذكاء التكرار المتباعد
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Average Ease Factor */}
-              <div className="bg-purple-900/20 rounded-2xl p-6 border border-purple-800/30 text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-purple-400 mb-2">
-                  {words.length > 0
-                    ? (
-                        words.reduce((sum, w) => sum + w.easeFactor, 0) /
-                        words.length
-                      ).toFixed(2)
-                    : '2.50'}
-                </div>
-                <div className="text-sm lg:text-base text-gray-400 mb-2">
-                  متوسط عامل السهولة
-                </div>
-                <div className="text-xs text-gray-500">
-                  {words.length > 0
-                    ? words.reduce((sum, w) => sum + w.easeFactor, 0) /
-                        words.length >=
-                      2.5
-                      ? '✨ ممتاز'
-                      : 'قابل للتحسين'
-                    : 'لا توجد بيانات'}
-                </div>
+                {/* How SM-2 Works */}
+                <button
+                  onClick={() => setShowSM2Modal(true)}
+                  className="p-2 rounded-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 transition-all touch-manipulation"
+                  title="كيف يعمل النظام الذكي؟"
+                >
+                  <AlertCircle className="text-blue-400" size={20} />
+                </button>
               </div>
 
-              {/* Average Interval */}
-              <div className="bg-blue-900/20 rounded-2xl p-6 border border-blue-800/30 text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">
-                  {words.length > 0
-                    ? Math.round(
-                        words.reduce((sum, w) => sum + w.interval, 0) /
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Average Ease Factor */}
+                <div className="bg-purple-900/20 rounded-2xl p-6 border border-purple-800/30 text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-purple-400 mb-2">
+                    {words.length > 0
+                      ? (
+                          words.reduce((sum, w) => sum + w.easeFactor, 0) /
                           words.length
-                      )
-                    : 1}
+                        ).toFixed(2)
+                      : '2.50'}
+                  </div>
+                  <div className="text-sm lg:text-base text-gray-400 mb-2">
+                    متوسط عامل السهولة
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {words.length > 0
+                      ? words.reduce((sum, w) => sum + w.easeFactor, 0) /
+                          words.length >=
+                        2.5
+                        ? '✨ ممتاز'
+                        : 'قابل للتحسين'
+                      : 'لا توجد بيانات'}
+                  </div>
                 </div>
-                <div className="text-sm lg:text-base text-gray-400 mb-2">
-                  متوسط فترة المراجعة (أيام)
-                </div>
-                <div className="text-xs text-gray-500">
-                  كلما زادت، كلما قل احتياجك للمراجعة
-                </div>
-              </div>
 
-              {/* Total Repetitions */}
-              <div className="bg-green-900/20 rounded-2xl p-6 border border-green-800/30 text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-green-400 mb-2">
-                  {words.reduce((sum, w) => sum + w.repetition, 0)}
+                {/* Average Interval */}
+                <div className="bg-blue-900/20 rounded-2xl p-6 border border-blue-800/30 text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-blue-400 mb-2">
+                    {words.length > 0
+                      ? Math.round(
+                          words.reduce((sum, w) => sum + w.interval, 0) /
+                            words.length
+                        )
+                      : 1}
+                  </div>
+                  <div className="text-sm lg:text-base text-gray-400 mb-2">
+                    متوسط فترة المراجعة (أيام)
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    كلما زادت، كلما قل احتياجك للمراجعة
+                  </div>
                 </div>
-                <div className="text-sm lg:text-base text-gray-400 mb-2">
-                  إجمالي التكرارات الناجحة
-                </div>
-                <div className="text-xs text-gray-500">
-                  مؤشر على مجهودك في التعلم
-                </div>
-              </div>
-            </div>
 
-            {/* How SM-2 Works */}
-            <div className="mt-6 bg-gray-700/50 rounded-2xl p-6 border border-gray-600/50">
-              <h4 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-                <Zap className="text-yellow-400" size={20} />
-                <span>كيف يعمل النظام الذكي؟</span>
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm lg:text-base">
-                <div className="space-y-2">
-                  <div className="flex items-start space-x-2">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span className="text-gray-300">
-                      تقييم صحيح (3-5): زيادة فترة المراجعة
-                    </span>
+                {/* Total Repetitions */}
+                <div className="bg-green-900/20 rounded-2xl p-6 border border-green-800/30 text-center">
+                  <div className="text-3xl lg:text-4xl font-bold text-green-400 mb-2">
+                    {words.reduce((sum, w) => sum + w.repetition, 0)}
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="text-red-400 mt-1">✗</span>
-                    <span className="text-gray-300">
-                      تقييم صعب (0-2): إعادة البداية
-                    </span>
+                  <div className="text-sm lg:text-base text-gray-400 mb-2">
+                    إجمالي التكرارات الناجحة
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="text-blue-400 mt-1">⚡</span>
-                    <span className="text-gray-300">
-                      عامل السهولة يتكيف مع أدائك
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-start space-x-2">
-                    <span className="text-purple-400 mt-1">🎯</span>
-                    <span className="text-gray-300">
-                      فترات مثلى: 1، 6، ثم مضاعفات ذكية
-                    </span>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="text-yellow-400 mt-1">🧠</span>
-                    <span className="text-gray-300">يتذكر نقاط ضعفك وقوتك</span>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="text-indigo-400 mt-1">⏰</span>
-                    <span className="text-gray-300">توقيت مثالي للمراجعة</span>
+                  <div className="text-xs text-gray-500">
+                    مؤشر على مجهودك في التعلم
                   </div>
                 </div>
               </div>
@@ -460,7 +416,7 @@ export default function StatsPage() {
           </div>
 
           {/* Learning Insights Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8 lg:mb-12 items-start">
             {/* Category Performance */}
             <div className="bg-gray-800 rounded-2xl lg:rounded-3xl p-6 lg:p-8 border border-gray-700">
               <div className="flex items-center space-x-3 mb-6">
@@ -496,7 +452,7 @@ export default function StatsPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               {/* Learning Velocity */}
               <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
                 <div className="flex items-center space-x-3 mb-4">
@@ -520,28 +476,6 @@ export default function StatsPage() {
                 </div>
               </div>
 
-              {/* Study Streak */}
-              <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Flame className="text-orange-400" size={20} />
-                  <h3 className="text-lg font-bold text-white">
-                    سلسلة المراجعة
-                  </h3>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-2xl font-bold text-orange-400 mb-1">
-                      {advancedStats.streakData.current}
-                    </div>
-                    <div className="text-sm text-gray-400">أيام متتالية</div>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    أطول: {advancedStats.streakData.longest} يوم
-                  </div>
-                </div>
-              </div>
-
               {/* Next Review */}
               <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
                 <div className="flex items-center space-x-3 mb-4">
@@ -561,6 +495,28 @@ export default function StatsPage() {
                   {stats.wordsNeedingReview > 0 && (
                     <div className="text-xs text-orange-400">⚡ الآن!</div>
                   )}
+                </div>
+              </div>
+
+              {/* Study Streak */}
+              <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Flame className="text-orange-400" size={20} />
+                  <h3 className="text-lg font-bold text-white">
+                    سلسلة المراجعة
+                  </h3>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-2xl font-bold text-orange-400 mb-1">
+                      {advancedStats.streakData.current}
+                    </div>
+                    <div className="text-sm text-gray-400">أيام متتالية</div>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    أطول: {advancedStats.streakData.longest} يوم
+                  </div>
                 </div>
               </div>
             </div>
@@ -694,6 +650,65 @@ export default function StatsPage() {
           ))}
         </div>
       </div>
+
+      {/* SM-2 Algorithm Modal */}
+      {showSM2Modal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-xl font-semibold text-white flex items-center space-x-2">
+                <Zap className="text-yellow-400" size={24} />
+                <span>كيف يعمل النظام الذكي؟</span>
+              </h4>
+              <button
+                onClick={() => setShowSM2Modal(false)}
+                className="p-2 rounded-full hover:bg-gray-700 transition-colors touch-manipulation"
+              >
+                <X className="text-gray-400" size={20} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm lg:text-base">
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <span className="text-green-400 mt-1">✓</span>
+                  <span className="text-gray-300">
+                    تقييم صحيح (3-5): زيادة فترة المراجعة
+                  </span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-red-400 mt-1">✗</span>
+                  <span className="text-gray-300">
+                    تقييم صعب (0-2): إعادة البداية
+                  </span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-blue-400 mt-1">⚡</span>
+                  <span className="text-gray-300">
+                    عامل السهولة يتكيف مع أدائك
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-start space-x-2">
+                  <span className="text-purple-400 mt-1">🎯</span>
+                  <span className="text-gray-300">
+                    فترات مثلى: 1، 6، ثم مضاعفات ذكية
+                  </span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-yellow-400 mt-1">🧠</span>
+                  <span className="text-gray-300">يتذكر نقاط ضعفك وقوتك</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="text-indigo-400 mt-1">⏰</span>
+                  <span className="text-gray-300">توقيت مثالي للمراجعة</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

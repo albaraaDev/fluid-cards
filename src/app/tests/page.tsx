@@ -381,7 +381,7 @@ export default function TestsPage() {
           <div className="text-sm text-gray-400">ابدأ فوراً</div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
           {quickTests.map((quickTest) => {
             const Icon = quickTest.icon;
             
@@ -474,7 +474,7 @@ export default function TestsPage() {
           {/* Filter Controls */}
           {showFilters && (
             <div className="bg-gray-800/50 rounded-2xl p-6 mb-6 border border-gray-700">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 
                 {/* Status Filter */}
                 <div>
@@ -483,7 +483,6 @@ export default function TestsPage() {
                     {[
                       { id: 'all', label: 'الكل' },
                       { id: 'completed', label: 'مكتملة' },
-                      { id: 'active', label: 'نشطة' },
                       { id: 'draft', label: 'مسودات' }
                     ].map((filter) => (
                       <button
@@ -502,7 +501,7 @@ export default function TestsPage() {
                 </div>
 
                 {/* Sort By */}
-                <div>
+                <div className='ms-auto'>
                   <label className="text-white font-semibold mb-3 block">ترتيب حسب:</label>
                   <select
                     value={sortBy}
@@ -521,7 +520,7 @@ export default function TestsPage() {
 
           {/* Tests Grid */}
           {filteredAndSortedTests.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredAndSortedTests.map((test) => {
                 const isCompleted = !!test.completedAt;
                 const score = test.results?.percentage || 0;
@@ -545,10 +544,6 @@ export default function TestsPage() {
                           <p className="text-gray-400 text-sm">{test.questions.length} أسئلة</p>
                         </div>
                       </div>
-                      
-                      <button className="p-2 text-gray-400 hover:text-white transition-all">
-                        <MoreVertical size={20} />
-                      </button>
                     </div>
 
                     {/* Test Stats */}
@@ -618,7 +613,7 @@ export default function TestsPage() {
                       
                       <button
                         onClick={() => handleDeleteTest(test.id)}
-                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all"
+                        className="p-2 bg-red-600 w-10 shrink-0 hover:bg-red-700 text-white rounded-xl transition-all flex justify-center items-center"
                       >
                         <Trash2 size={16} />
                       </button>
