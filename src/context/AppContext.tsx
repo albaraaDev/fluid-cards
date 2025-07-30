@@ -155,6 +155,8 @@ const calculateSM2 = (
 
     // تحديث easeFactor فقط للإجابات الصحيحة
     easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    // تحديث easeFactor فقط للإجابات الصحيحة
+    easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
     easeFactor = Math.max(easeFactor, 1.3);
   }
 
@@ -177,6 +179,8 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
+  const [words, setWords] = useLocalStorage<Word[]>('flashcard_words', DEFAULT_WORDS);
+  const [categories, setCategories] = useLocalStorage<string[]>('flashcard_categories', DEFAULT_CATEGORIES);
   const [words, setWords] = useLocalStorage<Word[]>('flashcard_words', DEFAULT_WORDS);
   const [categories, setCategories] = useLocalStorage<string[]>('flashcard_categories', DEFAULT_CATEGORIES);
   const [tests, setTests] = useLocalStorage<Test[]>('flashcard_tests', []);
@@ -353,6 +357,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           nextReview: currentTime + nextReviewDelay,
           quality: Math.max(0, Math.min(5, Number(quality))),
           ...sm2Result,
+          correctCount: quality >= 3 ? word.correctCount + 1 : word.correctCount,
+          incorrectCount: quality < 3 ? word.incorrectCount + 1 : word.incorrectCount,
+          lastReviewed: currentTime,
+          nextReview: currentTime + nextReviewDelay,
+          quality: Math.max(0, Math.min(5, Number(quality))),
+          ...sm2Result,
         };
       })
     );
@@ -453,6 +463,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
 
       return true;
+    } catch (error) {
+      console.error('Error importing data:', error);
     } catch (error) {
       console.error('Error importing data:', error);
       return false;
@@ -583,7 +595,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const totalTestTime = completedTests.reduce((sum, test) => sum + (test.results!.timeSpent || 0), 0);
 
     return {
-      totalTests,
+      totalTests: tests.length,
       completedTests: completedTests.length,
       averageScore: Math.round(averageScore),
       bestScore: Math.round(bestScore),
@@ -633,7 +645,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getActiveTest,
     getTestStats,
     saveTestToHistory,
-  };
+  }), [
+    words,
+    categories,
+    stats,
+    addWord,
+    updateWord,
+    deleteWord,
+    updateProgress,
+    updateProgressWithQuality,
+    addCategory,
+    exportData,
+    importData,
+    createTest,
+    startTest,
+    submitTestResults,
+    getTestHistory,
+    deleteTest,
+    getActiveTest,
+    getTestStats,
+    saveTestToHistory,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

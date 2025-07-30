@@ -1,4 +1,4 @@
-// src/components/tests/MixedTest.tsx
+// src/components/tests/MixedTest.tsx - النسخة المكتملة
 'use client';
 
 import { TestQuestion } from '@/types/flashcard';
@@ -183,163 +183,96 @@ export default function MixedTest({
       {/* Mixed Test Header */}
       <div className={`
         relative mb-6 transition-all duration-700 transform
-        ${hasAnimated ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+        ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
       `}>
         
-        {/* Main Header Card */}
-        <div className="bg-gradient-to-r from-pink-900/30 to-purple-900/30 backdrop-blur-sm rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-pink-800/30">
-          <div className="flex items-center justify-between">
-            
-            {/* Left Side - Mixed Test Info */}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center">
-                <Shuffle className="text-white" size={24} />
-              </div>
-              <div>
-                <h2 className="text-white font-bold text-lg lg:text-xl">اختبار مختلط</h2>
-                <p className="text-gray-400 text-sm">أنواع متنوعة من الأسئلة</p>
-              </div>
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <Shuffle size={16} className="text-white" />
             </div>
-
-            {/* Right Side - Progress */}
-            <div className="text-left">
-              <div className="text-white font-bold text-lg lg:text-xl">
-                {currentQuestionIndex} / {totalQuestions}
-              </div>
-              <div className="text-gray-400 text-sm">السؤال الحالي</div>
+            <div>
+              <h2 className="text-lg font-bold text-white">اختبار مختلط</h2>
+              <p className="text-sm text-gray-400">مزيج من جميع أنواع الأسئلة</p>
             </div>
           </div>
-
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="w-full bg-gray-700/50 h-2 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-pink-500 to-purple-600 transition-all duration-1000 ease-out"
-                style={{ width: `${(currentQuestionIndex / totalQuestions) * 100}%` }}
-              />
+          
+          <div className="text-right">
+            <div className="text-2xl font-bold text-white">
+              {currentQuestionIndex} / {totalQuestions}
             </div>
+            <div className="text-sm text-gray-400">السؤال الحالي</div>
           </div>
         </div>
 
-        {/* Question Type Indicator */}
-        {typeIndicatorVisible && (
-          <div className={`
-            absolute -bottom-2 left-1/2 transform -translate-x-1/2 transition-all duration-1000
-            ${hasAnimated ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-95'}
-          `}>
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-800 rounded-full h-2 mb-6">
+          <div 
+            className="bg-gradient-to-r from-pink-600 to-purple-600 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${(currentQuestionIndex / totalQuestions) * 100}%` }}
+          />
+        </div>
+
+        {/* Current Question Type Indicator */}
+        <div className={`
+          mb-6 p-4 rounded-2xl border transition-all duration-500 transform
+          ${typeIndicatorVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
+          ${typeInfo.bgColor} ${typeInfo.borderColor}
+        `}>
+          <div className="flex items-center space-x-3">
             <div className={`
-              ${typeInfo.bgColor} ${typeInfo.borderColor} border rounded-2xl px-4 py-2 
-              backdrop-blur-sm shadow-lg animate-pulse
+              w-10 h-10 bg-gradient-to-r ${typeInfo.color} rounded-xl flex items-center justify-center
             `}>
-              <div className="flex items-center space-x-3">
-                <Icon size={18} className={typeInfo.textColor} />
-                <div>
-                  <div className={`${typeInfo.textColor} font-bold text-sm`}>
-                    {typeInfo.title}
-                  </div>
-                  <div className="text-gray-400 text-xs">
-                    {typeInfo.description}
-                  </div>
-                </div>
-              </div>
+              <Icon size={20} className="text-white" />
+            </div>
+            <div>
+              <h3 className={`font-bold ${typeInfo.textColor}`}>
+                {typeInfo.title}
+              </h3>
+              <p className="text-gray-400 text-sm">
+                {typeInfo.description}
+              </p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Test Component */}
+      {/* Dynamic Test Component */}
       <div className={`
-        transition-all duration-700 delay-200 transform
-        ${hasAnimated ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
+        transition-all duration-500 delay-200 transform
+        ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
       `}>
         {renderTestComponent()}
       </div>
 
-      {/* Mixed Test Footer */}
+      {/* Question Type Legend (Bottom) */}
       {!showResult && (
         <div className={`
-          mt-8 text-center transition-all duration-700 delay-400 transform
-          ${hasAnimated ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+          mt-8 p-4 bg-gray-800/50 rounded-2xl border border-gray-700
+          transition-all duration-700 delay-500 transform
+          ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
         `}>
-          <div className="inline-flex items-center space-x-3 bg-gray-800/50 rounded-2xl px-6 py-3 border border-gray-700">
-            <Shuffle className="text-pink-400" size={16} />
-            <span className="text-gray-400 text-sm">
-              نوع السؤال التالي سيكون مفاجأة
-            </span>
-            <span className="text-pink-400 text-lg">✨</span>
-          </div>
-        </div>
-      )}
-
-      {/* Achievement Celebration */}
-      {showResult && currentQuestionIndex === totalQuestions && (
-        <div className={`
-          mt-8 text-center transition-all duration-1000 delay-800 transform
-          ${hasAnimated ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
-        `}>
-          <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-3xl p-6 border border-yellow-600/30">
-            <div className="text-6xl mb-4">🎉</div>
-            <h3 className="text-yellow-400 font-bold text-2xl mb-2">
-              أكملت الاختبار المختلط!
-            </h3>
-            <p className="text-gray-400">
-              تحدٍ رائع! واجهت أنواعاً متنوعة من الأسئلة
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Difficulty Indicator */}
-      {question.difficulty && question.difficulty > 3 && !showResult && (
-        <div className={`
-          fixed top-4 left-4 z-40 transition-all duration-1000 delay-600 transform
-          ${hasAnimated ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-        `}>
-          <div className="bg-red-900/20 border border-red-600/50 rounded-xl px-3 py-2 backdrop-blur-sm">
+          <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <span className="text-red-400 text-xs font-semibold">سؤال صعب</span>
+              <Target size={16} className="text-blue-400" />
+              <span className="text-gray-400">اختيار متعدد</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Zap size={16} className="text-green-400" />
+              <span className="text-gray-400">كتابة</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Star size={16} className="text-purple-400" />
+              <span className="text-gray-400">مطابقة</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Shuffle size={16} className="text-orange-400" />
+              <span className="text-gray-400">صح/خطأ</span>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes typeWriter {
-          from { width: 0; }
-          to { width: 100%; }
-        }
-        
-        .type-writer {
-          overflow: hidden;
-          border-right: 0.15em solid #3B82F6;
-          white-space: nowrap;
-          animation: typeWriter 1s steps(20, end), blink-caret 0.75s step-end infinite;
-        }
-        
-        @keyframes blink-caret {
-          from, to { border-color: transparent; }
-          50% { border-color: #3B82F6; }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
-        }
-        
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); }
-          50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.6); }
-        }
-        
-        .animate-glow {
-          animation: glow 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
