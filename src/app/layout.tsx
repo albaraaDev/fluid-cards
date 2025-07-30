@@ -134,18 +134,38 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <BottomNavigation />
           </div>
         </AppProvider>
+        {/* Service Worker Registration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                      console.log('✅ SW registered: ', registration);
-                    })
-                    .catch((registrationError) => {
-                      console.log('❌ SW registration failed: ', registrationError);
+                window.addEventListener('load', async () => {
+                  try {
+                    // إلغاء تسجيل SW القديم
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                      await registration.unregister();
+                    }
+                    
+                    // تسجيل SW جديد
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('✅ SW registered successfully:', registration);
+                    
+                    // التحديث التلقائي
+                    registration.addEventListener('updatefound', () => {
+                      const newWorker = registration.installing;
+                      if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('🔄 New SW available, reloading...');
+                            window.location.reload();
+                          }
+                        });
+                      }
                     });
+                  } catch (error) {
+                    console.error('❌ SW registration failed:', error);
+                  }
                 });
               }
             `,
