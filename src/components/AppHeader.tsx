@@ -1,179 +1,191 @@
-// src/components/AppHeader.tsx
 'use client';
 
-import { useApp } from '@/context/AppContext';
-import { Brain, ClipboardList, Download, Settings, Sparkles, TestTube, Upload, } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useCloudSync } from '@/hooks/useCloudSync';
+import {
+  ClipboardList,
+  Cloud,
+  CloudOff,
+  Loader2,
+  Save,
+} from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
+import ClientOnly from './ClientOnly';
+import UnifiedSyncCenter from './sync/UnifiedSyncCenter';
 
 const AppHeader: React.FC = () => {
-  const { exportData, importData } = useApp();
-  const pathname = usePathname();
-  const [showImportModal, setShowImportModal] = useState(false);
-
-  // معالج استيراد البيانات
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const importedData = JSON.parse(e.target?.result as string);
-        const success = await importData(importedData);
-        
-        if (success) {
-          setShowImportModal(false);
-          alert('✅ تم استيراد البيانات بنجاح!');
-        } else {
-          alert('❌ ملف غير صالح! تأكد من أنه ملف نسخة احتياطية صحيح.');
-        }
-      } catch (err) {
-        alert('❌ خطأ في قراءة الملف! تأكد من أنه ملف JSON صالح.');
-        console.error('خطأ في استيراد البيانات:', err);
-      } finally {
-        setShowImportModal(false);
-        event.target.value = '';
-      }
-    };
-
-    reader.readAsText(file);
-  };
-
-  // الحصول على عنوان الصفحة
-  const getPageTitle = (): string => {
-    switch (pathname) {
-      case '/': return 'لوحة التحكم';
-      case '/cards': return 'البطاقات';
-      case '/study': return 'المراجعة';
-      case '/tests': return 'الاختبارات';
-      case '/stats': return 'الإحصائيات';
-      default: return 'Fluid Cards';
-    }
-  };
-
-  // الحصول على أيقونة الصفحة
-  const getPageIcon = () => {
-    switch (pathname) {
-      case '/study': return <Brain size={20} className="text-purple-400" />;
-      case '/tests': return <ClipboardList size={20} className="text-orange-400" />;
-      case '/stats': return <Sparkles size={20} className="text-blue-400" />;
-      default: return null;
-    }
-  };
+  const [showSyncCenter, setShowSyncCenter] = useState(false);
 
   return (
     <>
-      {/* Header الأساسي */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-xl border-b border-gray-700/50">
+      <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-xl border-b border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             
-            {/* Logo & Page Title - محسن للآيباد */}
-            <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity group">
-              <div className="relative">
-                <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-xl lg:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <div className="w-5 h-5 lg:w-6 lg:h-6 bg-white rounded-md opacity-90 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse lg:w-4 lg:h-4"></div>
-                </div>
+            {/* Logo & Title */}
+            <div className="flex items-center space-x-3 lg:space-x-4">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-white text-lg lg:text-xl font-bold">💳</span>
               </div>
-              <div className="hidden sm:block">
-                <div className="flex items-center space-x-2">
-                  {getPageIcon()}
-                  <div>
-                    <h1 className="text-lg lg:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
-                      {getPageTitle()}
-                    </h1>
-                    <p className="text-xs lg:text-sm text-gray-400 hidden lg:block">
-                      Fluid Cards - بطاقات تعليمية ذكية
-                    </p>
-                  </div>
-                </div>
+              <div>
+                <Link href="/" className="block">
+                  <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Fluid Cards
+                  </h1>
+                </Link>
+                <p className="text-xs lg:text-sm text-gray-400 hidden sm:block">
+                  بطاقات تعليمية ذكية
+                </p>
               </div>
-            </Link>
+            </div>
 
-            {/* Action Buttons - محسن للمس */}
-            <div className="flex items-center space-x-2">
+            {/* Actions */}
+            <div className="flex items-center space-x-2 lg:space-x-3">
               
-              {/* Export Button */}
-              <button
-                onClick={exportData}
-                className="p-3 lg:p-4 text-gray-400 hover:text-blue-400 hover:bg-blue-900/30 rounded-xl lg:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-                title="تصدير البيانات"
-              >
-                <Download size={18} className="lg:w-5 lg:h-5" />
-              </button>
+              {/* Unified Sync & Backup Button - Client Only */}
+              <ClientOnly fallback={
+                <div className="p-3 lg:p-4 rounded-xl lg:rounded-2xl bg-gray-800">
+                  <Save size={18} className="lg:w-5 lg:h-5 text-gray-400" />
+                </div>
+              }>
+                <SyncButton onOpenSyncCenter={() => setShowSyncCenter(true)} />
+              </ClientOnly>
 
-              {/* Import Button */}
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="p-3 lg:p-4 text-gray-400 hover:text-green-400 hover:bg-green-900/30 rounded-xl lg:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-                title="استيراد البيانات"
-              >
-                <Upload size={18} className="lg:w-5 lg:h-5" />
-              </button>
+              {/* Divider */}
+              <div className="w-px h-8 bg-gray-700" />
 
               {/* Tests Button */}
               <Link
                 href="/tests"
                 className="p-3 lg:p-4 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-xl lg:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-                title="الاختبار"
+                title="الاختبارات"
               >
                 <ClipboardList size={18} className="lg:w-5 lg:h-5" />
               </Link>
+
+              {/* User Info - Client Only */}
+              <ClientOnly>
+                <UserInfo />
+              </ClientOnly>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-gray-800 rounded-3xl p-6 lg:p-8 max-w-md w-full border border-gray-700 shadow-2xl">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                <Upload size={24} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-2">
-                استيراد البيانات
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                اختر ملف JSON الذي تم تصديره مسبقاً لاستعادة بطاقاتك وإعداداتك
-              </p>
-            </div>
-
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              className="hidden"
-              id="import-file"
-            />
-            
-            <div className="space-y-3">
-              <label
-                htmlFor="import-file"
-                className="block w-full text-center bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white py-4 lg:py-5 rounded-2xl font-semibold cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
-              >
-                📁 اختيار ملف
-              </label>
-
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] touch-manipulation"
-              >
-                إلغاء
-              </button>
-            </div>
-
-            <div className="mt-4 text-xs text-gray-500 text-center">
-              الملفات المدعومة: JSON فقط
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified Sync Center - Client Only */}
+      <ClientOnly>
+        <UnifiedSyncCenter 
+          isOpen={showSyncCenter}
+          onClose={() => setShowSyncCenter(false)}
+        />
+      </ClientOnly>
     </>
+  );
+};
+
+// مكون منفصل لزر المزامنة
+const SyncButton: React.FC<{ onOpenSyncCenter: () => void }> = ({ onOpenSyncCenter }) => {
+  const { user } = useAuth();
+  const { syncStatus } = useCloudSync();
+
+  // تحديد حالة الأيقونة والألوان
+  const getSyncButtonStyle = () => {
+    if (!user) {
+      return {
+        icon: Save,
+        color: 'text-gray-400 hover:text-blue-400',
+        bgColor: 'hover:bg-blue-900/30',
+        title: 'إدارة البيانات والنسخ الاحتياطي'
+      };
+    }
+
+    if (syncStatus.syncInProgress) {
+      return {
+        icon: Loader2,
+        color: 'text-yellow-400',
+        bgColor: 'hover:bg-yellow-900/30',
+        title: 'جاري المزامنة...',
+        animate: 'animate-spin'
+      };
+    }
+
+    if (syncStatus.isConnected) {
+      return {
+        icon: Cloud,
+        color: 'text-green-400 hover:text-green-300',
+        bgColor: 'hover:bg-green-900/30',
+        title: 'متصل بالسحابة - إدارة البيانات'
+      };
+    }
+
+    return {
+      icon: CloudOff,
+      color: 'text-red-400 hover:text-red-300',
+      bgColor: 'hover:bg-red-900/30',
+      title: 'غير متصل - إدارة البيانات'
+    };
+  };
+
+  const syncStyle = getSyncButtonStyle();
+  const SyncIcon = syncStyle.icon;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onOpenSyncCenter}
+        className={`
+          relative p-3 lg:p-4 rounded-xl lg:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation
+          ${syncStyle.color} ${syncStyle.bgColor}
+        `}
+        title={syncStyle.title}
+      >
+        <SyncIcon 
+          size={18} 
+          className={`lg:w-5 lg:h-5 ${syncStyle.animate || ''}`} 
+        />
+      </button>
+
+      {/* Status Indicators */}
+      <div className="absolute -top-1 -right-1 flex items-center space-x-1">
+        {/* Sync Status Dot */}
+        <div 
+          className={`w-3 h-3 rounded-full border-2 border-gray-800 ${
+            user && syncStatus.isConnected 
+              ? syncStatus.syncInProgress 
+                ? 'bg-yellow-400 animate-pulse' 
+                : 'bg-green-400'
+              : user
+                ? 'bg-red-400'
+                : 'bg-gray-400'
+          }`}
+        />
+        
+        {/* Unsaved Changes Indicator */}
+        {syncStatus.hasUnsavedChanges && user && (
+          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" title="تغييرات غير محفوظة" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// مكون منفصل لمعلومات المستخدم
+const UserInfo: React.FC = () => {
+  const { user } = useAuth();
+  const { syncStatus } = useCloudSync();
+
+  if (!user) return null;
+
+  return (
+    <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gray-800/50 rounded-xl border border-gray-700/50">
+      <div className={`w-2 h-2 rounded-full ${
+        syncStatus.isConnected ? 'bg-green-400' : 'bg-red-400'
+      }`} />
+      <span className="text-sm text-gray-300">
+        {user.email.split('@')[0]}
+      </span>
+    </div>
   );
 };
 
