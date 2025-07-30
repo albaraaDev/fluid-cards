@@ -15,23 +15,26 @@ import {
   Target,
   Trash2,
   TrendingUp,
-  Zap
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 
 export default function HomePage() {
-  const { words, stats, updateWord, deleteWord, categories, addCategory } = useApp();
+  const { words, stats, updateWord, deleteWord, categories, addCategory } =
+    useApp();
   const [homeTimestamp] = useState(() => Date.now());
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
 
   // الكلمات العشوائية للمراجعة
   const randomUnmasteredWords = useMemo(() => {
-    const unmastered = words.filter(w => !(w.repetition >= 3 && w.interval >= 21));
-    return unmastered
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 6);
+    if (words.length === 0) return []; // ✅ مصفوفة فارغة للمستخدم الجديد
+
+    const unmastered = words.filter(
+      (w) => !(w.repetition >= 3 && w.interval >= 21)
+    );
+    return unmastered.sort(() => Math.random() - 0.5).slice(0, 6);
   }, [words]);
 
   // إحصائيات بطاقات الحالة
@@ -83,7 +86,6 @@ export default function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-      
       {/* Welcome Section */}
       <div className="mb-8 lg:mb-12">
         <div className="text-center lg:text-right">
@@ -91,12 +93,11 @@ export default function HomePage() {
             أهلاً بك في رحلة التعلم! 🚀
           </h1>
           <p className="text-lg lg:text-xl text-gray-400 mb-6">
-            {stats.totalWords === 0 
+            {stats.totalWords === 0
               ? 'ابدأ رحلتك التعليمية بإضافة أول كلمة!'
-              : stats.wordsNeedingReview > 0 
+              : stats.wordsNeedingReview > 0
               ? `لديك ${stats.wordsNeedingReview} كلمات تحتاج لمراجعة`
-              : 'أحسنت! جميع كلماتك محدثة'
-            }
+              : 'أحسنت! جميع كلماتك محدثة'}
           </p>
 
           {/* Quick Action Buttons للآيباد */}
@@ -111,7 +112,7 @@ export default function HomePage() {
                   <span>ابدأ المراجعة الآن</span>
                 </Link>
               )}
-              
+
               <Link
                 href="/cards"
                 className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 px-6 lg:px-8 py-3 lg:py-4 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
@@ -129,16 +130,23 @@ export default function HomePage() {
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`${stat.bgColor} rounded-2xl lg:rounded-3xl p-4 lg:p-6 border ${stat.borderColor} hover:scale-105 transition-all duration-300 cursor-pointer touch-manipulation`}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 lg:p-3 ${stat.bgColor} rounded-xl lg:rounded-2xl border ${stat.borderColor}`}>
-                  <Icon size={20} className={`lg:w-6 lg:h-6 ${stat.iconColor}`} />
+                <div
+                  className={`p-2 lg:p-3 ${stat.bgColor} rounded-xl lg:rounded-2xl border ${stat.borderColor}`}
+                >
+                  <Icon
+                    size={20}
+                    className={`lg:w-6 lg:h-6 ${stat.iconColor}`}
+                  />
                 </div>
               </div>
-              <div className={`text-2xl lg:text-3xl font-bold ${stat.textColor} mb-1`}>
+              <div
+                className={`text-2xl lg:text-3xl font-bold ${stat.textColor} mb-1`}
+              >
                 {stat.value}
               </div>
               <div className="text-sm lg:text-base text-gray-400">
@@ -155,20 +163,22 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <Target className="text-purple-400" size={24} />
-              <h3 className="text-xl lg:text-2xl font-bold text-white">التقدم العام</h3>
+              <h3 className="text-xl lg:text-2xl font-bold text-white">
+                التقدم العام
+              </h3>
             </div>
             <span className="text-3xl lg:text-4xl font-bold text-purple-400">
               {stats.progress.toFixed(0)}%
             </span>
           </div>
-          
+
           <div className="w-full bg-gray-700 rounded-full h-3 lg:h-4 mb-4">
-            <div 
+            <div
               className="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${stats.progress}%` }}
             />
           </div>
-          
+
           <div className="flex justify-between text-sm lg:text-base text-gray-400">
             <span>{stats.masteredWords} محفوظة</span>
             <span>{stats.totalWords} إجمالي</span>
@@ -182,16 +192,18 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <Zap className="text-yellow-400" size={24} />
-              <h3 className="text-xl lg:text-2xl font-bold text-white">كلمات للمراجعة</h3>
+              <h3 className="text-xl lg:text-2xl font-bold text-white">
+                كلمات للمراجعة
+              </h3>
             </div>
-            <Link 
+            <Link
               href="/cards"
               className="text-blue-400 hover:text-blue-300 text-sm lg:text-base font-medium transition-colors"
             >
               عرض الكل ←
             </Link>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {randomUnmasteredWords.map((word) => (
               <div
@@ -208,7 +220,7 @@ export default function HomePage() {
                       {word.meaning}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center space-x-1">
                     <button
                       onClick={(e) => {
@@ -232,16 +244,21 @@ export default function HomePage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className={`
+                  <span
+                    className={`
                     text-xs lg:text-sm px-2 py-1 rounded-full
-                    ${word.difficulty === 'سهل' ? 'bg-green-900/30 text-green-400 border border-green-800/50' :
-                      word.difficulty === 'متوسط' ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50' :
-                      'bg-red-900/30 text-red-400 border border-red-800/50'
+                    ${
+                      word.difficulty === 'سهل'
+                        ? 'bg-green-900/30 text-green-400 border border-green-800/50'
+                        : word.difficulty === 'متوسط'
+                        ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50'
+                        : 'bg-red-900/30 text-red-400 border border-red-800/50'
                     }
-                  `}>
+                  `}
+                  >
                     {word.difficulty}
                   </span>
-                  
+
                   <span className="text-xs lg:text-sm text-gray-500">
                     {word.category}
                   </span>
@@ -264,7 +281,7 @@ export default function HomePage() {
           <p className="text-gray-400 mb-8 text-lg lg:text-xl max-w-md mx-auto leading-relaxed">
             أضف كلماتك الأولى وابدأ في بناء مفرداتك بطريقة ذكية ومنظمة
           </p>
-          
+
           <Link
             href="/cards"
             className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white px-8 lg:px-10 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
