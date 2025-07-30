@@ -230,18 +230,6 @@ const BottomNavigation: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Progress Indicator للآيباد */}
-        {/* {stats.totalWords > 0 && (
-          <div className="hidden lg:block absolute top-0 left-0 right-0">
-            <div className="h-1 bg-gray-800">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-1000 ease-out"
-                style={{ width: `${stats.progress}%` }}
-              />
-            </div>
-          </div>
-        )} */}
       </nav>
 
       {/* Add Word Form */}

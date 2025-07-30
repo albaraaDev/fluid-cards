@@ -2,7 +2,7 @@
 'use client';
 
 import { useApp } from '@/context/AppContext';
-import { Brain, Download, Settings, Sparkles, Upload } from 'lucide-react';
+import { Brain, ClipboardList, Download, Settings, Sparkles, TestTube, Upload, } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useState } from 'react';
@@ -47,6 +47,7 @@ const AppHeader: React.FC = () => {
       case '/': return 'لوحة التحكم';
       case '/cards': return 'البطاقات';
       case '/study': return 'المراجعة';
+      case '/tests': return 'الاختبارات';
       case '/stats': return 'الإحصائيات';
       default: return 'Fluid Cards';
     }
@@ -56,6 +57,7 @@ const AppHeader: React.FC = () => {
   const getPageIcon = () => {
     switch (pathname) {
       case '/study': return <Brain size={20} className="text-purple-400" />;
+      case '/tests': return <ClipboardList size={20} className="text-orange-400" />;
       case '/stats': return <Sparkles size={20} className="text-blue-400" />;
       default: return null;
     }
@@ -112,13 +114,14 @@ const AppHeader: React.FC = () => {
                 <Upload size={18} className="lg:w-5 lg:h-5" />
               </button>
 
-              {/* Settings Button */}
-              <button
+              {/* Tests Button */}
+              <Link
+                href="/tests"
                 className="p-3 lg:p-4 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-xl lg:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation"
-                title="الإعدادات"
+                title="الاختبار"
               >
-                <Settings size={18} className="lg:w-5 lg:h-5" />
-              </button>
+                <ClipboardList size={18} className="lg:w-5 lg:h-5" />
+              </Link>
             </div>
           </div>
         </div>
