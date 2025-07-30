@@ -596,7 +596,7 @@ export default function StudyPage() {
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-white">
                 {currentMode === 'classic'
-                  ? 'النمط الكلاسيكي'
+                  ? 'كلاسيكي'
                   : currentMode === 'speed'
                   ? 'السرعة'
                   : currentMode === 'reverse'

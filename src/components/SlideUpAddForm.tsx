@@ -290,9 +290,9 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: 'سهل', color: 'bg-green-600 hover:bg-green-700', label: '🟢 سهل' },
-                { value: 'متوسط', color: 'bg-yellow-600 hover:bg-yellow-700', label: '🟡 متوسط' },
-                { value: 'صعب', color: 'bg-red-600 hover:bg-red-700', label: '🔴 صعب' }
+                { value: 'سهل', color: 'bg-green-600 hover:bg-green-700', label: 'سهل' },
+                { value: 'متوسط', color: 'bg-yellow-600 hover:bg-yellow-700', label: 'متوسط' },
+                { value: 'صعب', color: 'bg-red-600 hover:bg-red-700', label: 'صعب' }
               ].map((difficulty) => (
                 <button
                   key={difficulty.value}

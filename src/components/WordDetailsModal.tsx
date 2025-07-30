@@ -164,7 +164,7 @@ export default function WordDetailsModal({
             </div>
             {/* Last Quality Rating */}
             {word.quality !== undefined && (
-              <div className="bg-yellow-900/20 rounded-2xl p-4 border border-yellow-800/30">
+              <div className="bg-yellow-900/20 rounded-2xl p-4 border border-yellow-800/30 max-sm:hidden">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-sm text-gray-400">آخر تقييم: </span>
@@ -190,14 +190,14 @@ export default function WordDetailsModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 lg:p-8 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
+        <div className="p-6 lg:p-8 space-y-6 max-h-[calc(90vh-300px)] overflow-y-auto">
           {/* Basic Info */}
           <div className="grid grid-cols-2 gap-4">
             <div
               className={`${difficultyStyle.bg} rounded-2xl p-4 border ${difficultyStyle.border}`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-400">مستوى الصعوبة</span>
+                <span className="text-sm text-gray-400">الصعوبة</span>
                 <div
                   className={`w-3 h-3 rounded-full ${difficultyStyle.dot}`}
                 />
@@ -217,6 +217,23 @@ export default function WordDetailsModal({
               </div>
             </div>
           </div>
+
+          {/* Last Quality Rating */}
+          {word.quality !== undefined && (
+            <div className="bg-yellow-900/20 rounded-2xl p-4 border border-yellow-800/30 sm:hidden mt-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-sm text-gray-400">آخر تقييم: </span>
+                  <span className="text-yellow-400 font-bold">
+                    {word.quality}/5
+                  </span>
+                </div>
+                <div className="text-2xl">
+                  {word.quality >= 4 ? '😊' : word.quality >= 3 ? '😐' : '🤔'}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* SM-2 Algorithm Stats */}
           <div className="bg-purple-900/20 rounded-2xl p-6 border border-purple-800/30">
