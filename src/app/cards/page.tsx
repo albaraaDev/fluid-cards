@@ -415,7 +415,7 @@ export default function CardsPage() {
           word={editingWord}
           categories={categories}
           onSave={(updatedWord) => {
-            updateWord(updatedWord);
+            updateWord(updatedWord.id, updatedWord);
             setEditingWord(null);
           }}
           onCancel={() => setEditingWord(null)}

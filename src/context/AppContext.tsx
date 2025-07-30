@@ -1,106 +1,117 @@
-// src/context/AppContext.tsx - النسخة المحسنة للأداء
+// src/context/AppContext.tsx - النسخة الكاملة والأخيرة
 'use client';
 
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Test, TestResults, TestSettings, Word } from '@/types/flashcard';
-import { QuestionGenerator } from '@/utils/QuestionGenerator';
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
+import {
+  AppData,
+  AppStats,
+  DifficultyFilter,
+  StudySession,
+  Test,
+  TestQuestion,
+  TestResults,
+  TestSettings,
+  TestType,
+  Word,
+} from '@/types/flashcard';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
 
-// الكلمات الافتراضية
+// ==========================================
+// Default Data
+// ==========================================
 const DEFAULT_WORDS: Word[] = [
   {
     id: 1,
-    word: 'Serendipity',
-    meaning: 'المصادفة السعيدة، اكتشاف شيء جميل بالصدفة',
-    note: 'Finding something wonderful when you were not looking for it.',
-    category: 'عام',
-    difficulty: 'متوسط',
-    lastReviewed: Date.now(),
-    correctCount: 0,
-    incorrectCount: 0,
-    nextReview: Date.now(),
+    word: 'Ubiquitous',
+    meaning: 'موجود في كل مكان، منتشر على نطاق واسع',
+    note: 'من اللاتينية ubique تعني "في كل مكان"',
+    category: 'مفردات أكاديمية',
+    difficulty: 'صعب',
+    lastReviewed: Date.now() - 86400000,
+    correctCount: 2,
+    incorrectCount: 1,
+    nextReview: Date.now() - 3600000,
     easeFactor: 2.5,
     interval: 1,
-    repetition: 0,
+    repetition: 2,
+    quality: 4,
   },
   {
     id: 2,
-    word: 'Ubiquitous',
-    meaning: 'موجود في كل مكان، منتشر على نطاق واسع',
-    note: 'Technology has become ubiquitous in modern life.',
-    category: 'عام',
+    word: 'Ephemeral',
+    meaning: 'مؤقت، زائل، قصير المدى',
+    note: 'يُستخدم لوصف الأشياء التي تدوم لفترة قصيرة',
+    category: 'مفردات أكاديمية',
     difficulty: 'متوسط',
-    lastReviewed: Date.now(),
-    correctCount: 0,
+    lastReviewed: Date.now() - 172800000,
+    correctCount: 3,
     incorrectCount: 0,
-    nextReview: Date.now(),
-    easeFactor: 2.5,
-    interval: 1,
-    repetition: 0,
+    nextReview: Date.now() + 86400000,
+    easeFactor: 2.6,
+    interval: 3,
+    repetition: 3,
+    quality: 5,
   },
   {
     id: 3,
-    word: 'Ephemeral',
-    meaning: 'عابر، مؤقت، يدوم لفترة قصيرة',
-    note: 'The beauty of cherry blossoms is ephemeral, lasting only a few weeks.',
-    category: 'عام',
-    difficulty: 'صعب',
-    lastReviewed: Date.now(),
-    correctCount: 0,
-    incorrectCount: 0,
-    nextReview: Date.now(),
-    easeFactor: 2.5,
-    interval: 1,
-    repetition: 0,
+    word: 'Serendipity',
+    meaning: 'اكتشاف شيء جميل بالصدفة',
+    note: 'كلمة إنجليزية جميلة تعبر عن السعادة غير المتوقعة',
+    category: 'مفردات عامة',
+    difficulty: 'سهل',
+    lastReviewed: Date.now() - 259200000,
+    correctCount: 4,
+    incorrectCount: 1,
+    nextReview: Date.now() - 7200000,
+    easeFactor: 2.4,
+    interval: 2,
+    repetition: 4,
+    quality: 3,
   },
 ];
 
-const DEFAULT_CATEGORIES = ['عام', 'تقنية', 'علوم', 'أدب'];
+const DEFAULT_CATEGORIES = [
+  'مفردات أكاديمية',
+  'مفردات عامة',
+  'مصطلحات تقنية',
+  'تعبيرات شائعة',
+];
 
-// Types للـ Context
+// ==========================================
+// Context Interface
+// ==========================================
 interface AppContextType {
-  // البيانات الأساسية
+  // Core Data
   words: Word[];
   categories: string[];
+  stats: AppStats;
+  isClient: boolean;
 
-  // الإحصائيات المحسوبة (memoized)
-  stats: {
-    totalWords: number;
-    masteredWords: number;
-    wordsNeedingReview: number;
-    progress: number;
-    totalTests: number;
-    completedTests: number;
-    averageScore: number;
-    bestScore: number;
-    totalTestTime: number;
-  };
-
-  // الأفعال - Words (memoized callbacks)
-  addWord: (
-    newWordData: Omit<
-      Word,
-      | 'id'
-      | 'lastReviewed'
-      | 'correctCount'
-      | 'incorrectCount'
-      | 'nextReview'
-      | 'easeFactor'
-      | 'interval'
-      | 'repetition'
-    >
-  ) => void;
-  updateWord: (updatedWord: Word) => void;
+  // Word Management
+  addWord: (word: Omit<Word, 'id' | 'lastReviewed' | 'correctCount' | 'incorrectCount' | 'nextReview' | 'easeFactor' | 'interval' | 'repetition'>) => void;
+  updateWord: (id: number, updates: Partial<Word>) => void;
   deleteWord: (id: number) => void;
+  
+  // Progress Tracking (SM-2)
   updateProgress: (wordId: number, correct: boolean) => void;
   updateProgressWithQuality: (wordId: number, quality: number) => void;
-
-  // الأفعال - Categories (memoized callbacks)
-  addCategory: (newCategory: string) => void;
-
-  // الأفعال - البيانات (memoized callbacks)
+  
+  // Category Management
+  addCategory: (category: string) => void;
+  
+  // Data Management
   exportData: () => void;
   importData: (data: any) => Promise<boolean>;
+  
+  // Test Management
   createTest: (settings: TestSettings) => Test;
   startTest: (testId: string) => void;
   submitTestResults: (testId: string, results: TestResults) => void;
@@ -117,7 +128,9 @@ interface AppContextType {
   saveTestToHistory: (test: Test) => void;
 }
 
-// SM-2 Algorithm Implementation (مُحسن للأداء)
+// ==========================================
+// SM-2 Algorithm Implementation
+// ==========================================
 const calculateSM2 = (
   word: Word,
   quality: number
@@ -151,10 +164,14 @@ const calculateSM2 = (
   return { interval, repetition, easeFactor };
 };
 
-// إنشاء الـ Context
+// ==========================================
+// Context Creation
+// ==========================================
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Provider المكون
+// ==========================================
+// Provider Component
+// ==========================================
 interface AppProviderProps {
   children: ReactNode;
 }
@@ -163,12 +180,33 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [words, setWords] = useLocalStorage<Word[]>('flashcard_words', DEFAULT_WORDS);
   const [categories, setCategories] = useLocalStorage<string[]>('flashcard_categories', DEFAULT_CATEGORIES);
   const [tests, setTests] = useLocalStorage<Test[]>('flashcard_tests', []);
+  const [isClient, setIsClient] = useState(false);
 
-  // ⚡ Memoized timestamp function لتجنب تكرار الحسابات
+  // التأكد من client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // ⚡ Memoized timestamp function
   const getCurrentTimestamp = useCallback(() => Date.now(), []);
 
-  // ⚡ Memoized إحصائيات محسوبة لتجنب re-computation في كل render
+  // ⚡ Memoized إحصائيات محسوبة
   const stats = useMemo(() => {
+    if (!isClient) {
+      // Return default stats for server-side rendering
+      return {
+        totalWords: 0,
+        masteredWords: 0,
+        wordsNeedingReview: 0,
+        progress: 0,
+        totalReviews: 0,
+        averageCorrectRate: 0,
+        streak: { current: 0, longest: 0 },
+        categoryStats: [],
+        difficultyStats: [],
+      };
+    }
+
     const currentTime = getCurrentTimestamp();
     const totalWords = words.length;
 
@@ -180,89 +218,132 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       (w) => w.nextReview <= currentTime
     ).length;
     
-    const progress = totalWords > 0 ? (masteredWords / totalWords) * 100 : 0;
-    
-    // إحصائيات الاختبارات
-    const completedTestsList = tests.filter(t => t.completedAt && t.results);
-    const totalTests = tests.length;
-    
-    let averageScore = 0;
-    let bestScore = 0;
-    let totalTestTime = 0;
-    
-    if (completedTestsList.length > 0) {
-      const totalScore = completedTestsList.reduce((sum, test) => sum + (test.results?.percentage || 0), 0);
-      averageScore = Math.round(totalScore / completedTestsList.length);
-      bestScore = Math.max(...completedTestsList.map(test => test.results?.percentage || 0));
-      totalTestTime = completedTestsList.reduce((sum, test) => sum + (test.results?.timeSpent || 0), 0);
-    }
+    const progress = totalWords > 0 ? Math.round((masteredWords / totalWords) * 100) : 0;
 
+    const totalReviews = words.reduce(
+      (sum, w) => sum + w.correctCount + w.incorrectCount,
+      0
+    );
+
+    const totalCorrect = words.reduce(
+      (sum, w) => sum + w.correctCount,
+      0
+    );
+
+    const averageCorrectRate = totalReviews > 0 ? Math.round((totalCorrect / totalReviews) * 100) : 0;
+
+    // إحصائيات التصنيفات
+    const categoryMap = new Map<string, { total: number; mastered: number; needReview: number }>();
+    words.forEach((word) => {
+      const category = word.category;
+      const current = categoryMap.get(category) || { total: 0, mastered: 0, needReview: 0 };
+      current.total++;
+      if (word.repetition >= 3 && word.interval >= 21) current.mastered++;
+      if (word.nextReview <= currentTime) current.needReview++;
+      categoryMap.set(category, current);
+    });
+
+    const categoryStats = Array.from(categoryMap.entries()).map(([name, data]) => ({
+      name,
+      ...data,
+      progress: data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0,
+    }));
+
+    // إحصائيات الصعوبة
+    const difficultyMap = new Map<'سهل' | 'متوسط' | 'صعب', { total: number; mastered: number }>();
+    words.forEach((word) => {
+      const difficulty = word.difficulty;
+      const current = difficultyMap.get(difficulty) || { total: 0, mastered: 0 };
+      current.total++;
+      if (word.repetition >= 3 && word.interval >= 21) current.mastered++;
+      difficultyMap.set(difficulty, current);
+    });
+
+    const difficultyStats = Array.from(difficultyMap.entries()).map(([name, data]) => ({
+      name,
+      ...data,
+      progress: data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0,
+      averageReviews: data.total > 0 ? totalReviews / data.total : 0,
+    }));
+    
     return {
       totalWords,
       masteredWords,
       wordsNeedingReview,
       progress,
-      totalTests,
-      completedTests: completedTestsList.length,
-      averageScore,
-      bestScore,
-      totalTestTime
+      totalReviews,
+      averageCorrectRate,
+      streak: { current: 0, longest: 0 }, // يمكن تطويرها لاحقاً
+      categoryStats,
+      difficultyStats,
     };
-  }, [words, tests, getCurrentTimestamp]);
+  }, [words, getCurrentTimestamp, isClient]);
 
-  // ⚡ Memoized إضافة كلمة جديدة
-  const addWord = useCallback((
-    newWordData: Omit<
-      Word,
-      | 'id'
-      | 'lastReviewed'
-      | 'correctCount'
-      | 'incorrectCount'
-      | 'nextReview'
-      | 'easeFactor'
-      | 'interval'
-      | 'repetition'
-    >
-  ) => {
+  // ==========================================
+  // Word Management Functions
+  // ==========================================
+
+  // ⚡ إضافة كلمة جديدة
+  const addWord = useCallback((newWord: Omit<Word, 'id' | 'lastReviewed' | 'correctCount' | 'incorrectCount' | 'nextReview' | 'easeFactor' | 'interval' | 'repetition'>) => {
+    if (!isClient) return;
+
     const currentTime = getCurrentTimestamp();
-    const newWord: Word = {
-      ...newWordData,
-      id: currentTime, // استخدام timestamp كـ ID فريد
+    const id = Math.max(0, ...words.map(w => w.id)) + 1;
+    
+    const word: Word = {
+      ...newWord,
+      id,
       lastReviewed: currentTime,
       correctCount: 0,
       incorrectCount: 0,
-      nextReview: currentTime,
-      easeFactor: 2.5,
+      nextReview: currentTime, // متاحة للمراجعة فوراً
+      easeFactor: 2.5, // القيمة الافتراضية لـ SM-2
       interval: 1,
       repetition: 0,
     };
 
-    setWords((prev) => [...prev, newWord]);
-  }, [getCurrentTimestamp, setWords]);
+    setWords(prevWords => [...prevWords, word]);
 
-  // ⚡ Memoized تحديث كلمة موجودة
-  const updateWord = useCallback((updatedWord: Word) => {
-    setWords((prev) =>
-      prev.map((word) => (word.id === updatedWord.id ? updatedWord : word))
+    // إضافة التصنيف إذا لم يكن موجوداً
+    if (!categories.includes(newWord.category)) {
+      setCategories(prevCategories => [...prevCategories, newWord.category]);
+    }
+  }, [words, categories, setWords, setCategories, getCurrentTimestamp, isClient]);
+
+  // ⚡ تحديث كلمة
+  const updateWord = useCallback((id: number, updates: Partial<Word>) => {
+    if (!isClient) return;
+    
+    setWords(prevWords => 
+      prevWords.map(word => 
+        word.id === id ? { ...word, ...updates } : word
+      )
     );
-  }, [setWords]);
+  }, [setWords, isClient]);
 
-  // ⚡ Memoized حذف كلمة
+  // ⚡ حذف كلمة
   const deleteWord = useCallback((id: number) => {
-    setWords((prev) => prev.filter((word) => word.id !== id));
-  }, [setWords]);
+    if (!isClient) return;
+    
+    setWords(prevWords => prevWords.filter(word => word.id !== id));
+  }, [setWords, isClient]);
 
-  // ⚡ Memoized تحديث التقدم مع الجودة
+  // ==========================================
+  // Progress Tracking (SM-2 Algorithm)
+  // ==========================================
+
+  // ⚡ تحديث التقدم مع تقييم الجودة (0-5)
   const updateProgressWithQuality = useCallback((wordId: number, quality: number) => {
+    if (!isClient) return;
+    
     const currentTime = getCurrentTimestamp();
     
-    setWords((prev) =>
-      prev.map((word) => {
+    setWords(prevWords => 
+      prevWords.map(word => {
         if (word.id !== wordId) return word;
 
-        // حساب الفترة الجديدة باستخدام SM-2
         const sm2Result = calculateSM2(word, quality);
-        const nextReviewDelay = sm2Result.interval * 24 * 60 * 60 * 1000;
+        const nextReviewDelay = sm2Result.interval * 24 * 60 * 60 * 1000; // تحويل أيام إلى ميللي ثانية
 
         return {
           ...word,
@@ -275,23 +356,35 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         };
       })
     );
-  }, [getCurrentTimestamp, setWords]);
+  }, [getCurrentTimestamp, setWords, isClient]);
 
-  // ⚡ Memoized تحديث بسيط (صحيح/خطأ)
+  // ⚡ تحديث بسيط (صحيح/خطأ)
   const updateProgress = useCallback((wordId: number, correct: boolean) => {
     updateProgressWithQuality(wordId, correct ? 4 : 1);
   }, [updateProgressWithQuality]);
 
-  // ⚡ Memoized إضافة تصنيف
+  // ==========================================
+  // Category Management
+  // ==========================================
+
+  // ⚡ إضافة تصنيف
   const addCategory = useCallback((newCategory: string) => {
+    if (!isClient) return;
+    
     const trimmedCategory = newCategory.trim();
     if (trimmedCategory && !categories.includes(trimmedCategory)) {
       setCategories((prev) => [...prev, trimmedCategory]);
     }
-  }, [categories, setCategories]);
+  }, [categories, setCategories, isClient]);
 
-  // ⚡ Memoized تصدير البيانات
+  // ==========================================
+  // Data Management
+  // ==========================================
+
+  // ⚡ تصدير البيانات
   const exportData = useCallback(() => {
+    if (!isClient) return;
+    
     const currentTime = getCurrentTimestamp();
     
     const exportData = {
@@ -303,7 +396,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       appVersion: '2.0.0',
       totalWords: words.length,
       masteredWords: words.filter((w) => w.repetition >= 3 && w.interval >= 21).length,
-      studySessions: [],
+      studySessions: [], // يمكن إضافة بيانات الجلسات لاحقاً
     };
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -317,29 +410,44 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [words, categories, getCurrentTimestamp]);
+  }, [words, categories, getCurrentTimestamp, isClient]);
 
-  // ⚡ Memoized استيراد البيانات (simplified)
+  // ⚡ استيراد البيانات
   const importData = useCallback(async (data: any): Promise<boolean> => {
+    if (!isClient) return false;
+    
     try {
       if (!data || !data.words || !Array.isArray(data.words)) {
         return false;
       }
 
+      // التحقق من صحة البيانات
       const validWords = data.words.filter((word: any) => 
         word && 
         typeof word === 'object' && 
         word.word && 
         word.meaning &&
         word.category &&
-        word.difficulty
-      );
+        word.difficulty &&
+        typeof word.id === 'number'
+      ).map((word: any) => ({
+        ...word,
+        // التأكد من وجود حقول SM-2
+        easeFactor: word.easeFactor || 2.5,
+        interval: word.interval || 1,
+        repetition: word.repetition || 0,
+        lastReviewed: word.lastReviewed || Date.now(),
+        nextReview: word.nextReview || Date.now(),
+        correctCount: word.correctCount || 0,
+        incorrectCount: word.incorrectCount || 0,
+      }));
 
       if (validWords.length === 0) {
         return false;
       }
 
       setWords(validWords);
+      
       if (data.categories && Array.isArray(data.categories)) {
         setCategories(data.categories);
       }
@@ -349,102 +457,174 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       console.error('Error importing data:', error);
       return false;
     }
-  }, [setWords, setCategories]);
+  }, [setWords, setCategories, isClient]);
 
-  // ⚡ Memoized دوال الاختبارات
+  // ==========================================
+  // Test Management
+  // ==========================================
+
+  // ⚡ إنشاء اختبار جديد
   const createTest = useCallback((settings: TestSettings): Test => {
-    const currentTime = getCurrentTimestamp();
-    
+    if (!isClient) throw new Error('Not on client side');
+
+    // فلترة الكلمات حسب الإعدادات
+    let filteredWords = words;
+
+    if (settings.categories.length > 0) {
+      filteredWords = filteredWords.filter(w => settings.categories.includes(w.category));
+    }
+
+    if (settings.difficulties.length > 0 && !settings.difficulties.includes('all')) {
+      filteredWords = filteredWords.filter(w => 
+        settings.difficulties.includes(w.difficulty as DifficultyFilter)
+      );
+    }
+
+    // اختيار عدد محدود من الكلمات
+    const selectedWords = settings.randomOrder 
+      ? filteredWords.sort(() => Math.random() - 0.5).slice(0, settings.questionCount)
+      : filteredWords.slice(0, settings.questionCount);
+
+    // إنشاء أسئلة الاختبار
+    const questions: TestQuestion[] = selectedWords.map((word, index) => ({
+      id: `q_${Date.now()}_${index}`,
+      wordId: word.id,
+      type: settings.type,
+      question: settings.type === 'multiple_choice' 
+        ? `ما معنى "${word.word}"؟`
+        : settings.type === 'typing'
+        ? `اكتب معنى "${word.word}"`
+        : settings.type === 'true_false'
+        ? `هل "${word.word}" تعني "${word.meaning}"؟`
+        : `اربط "${word.word}" بمعناها`,
+      correctAnswer: word.meaning,
+      options: settings.type === 'multiple_choice' 
+        ? generateMultipleChoiceOptions(word, words)
+        : undefined,
+      difficulty: 1,
+    }));
+
     const test: Test = {
-      id: `test_${currentTime}`,
-      name: `اختبار ${new Date(currentTime).toLocaleString('ar')}`,
+      id: `test_${Date.now()}`,
+      name: `اختبار ${settings.type} - ${new Date().toLocaleDateString('ar-SA')}`,
+      description: `اختبار يحتوي على ${questions.length} سؤال`,
       settings,
-      questions: [], // سيتم ملؤها من QuestionGenerator
-      createdAt: currentTime,
+      questions,
+      createdAt: Date.now(),
       isActive: false,
     };
 
     return test;
-  }, [getCurrentTimestamp]);
+  }, [words, isClient]);
 
-  const getTestHistory = useCallback(() => tests, [tests]);
+  // ⚡ بدء اختبار
+  const startTest = useCallback((testId: string) => {
+    if (!isClient) return;
+    
+    setTests(prevTests => 
+      prevTests.map(test => ({
+        ...test,
+        isActive: test.id === testId
+      }))
+    );
+  }, [setTests, isClient]);
 
-  const saveTestToHistory = useCallback((test: Test) => {
-    setTests((prev) => {
-      const existingIndex = prev.findIndex(t => t.id === test.id);
-      if (existingIndex >= 0) {
-        const newTests = [...prev];
-        newTests[existingIndex] = test;
-        return newTests;
-      } else {
-        return [...prev, test];
-      }
-    });
-  }, [setTests]);
-
+  // ⚡ حفظ نتائج الاختبار
   const submitTestResults = useCallback((testId: string, results: TestResults) => {
-    setTests((prev) =>
-      prev.map((test) =>
-        test.id === testId
-          ? { ...test, results, completedAt: getCurrentTimestamp() }
+    if (!isClient) return;
+    
+    setTests(prevTests => 
+      prevTests.map(test => 
+        test.id === testId 
+          ? { ...test, results, completedAt: Date.now(), isActive: false }
           : test
       )
     );
-  }, [setTests, getCurrentTimestamp]);
+  }, [setTests, isClient]);
 
+  // ⚡ الحصول على تاريخ الاختبارات
+  const getTestHistory = useCallback((): Test[] => {
+    if (!isClient) return [];
+    return tests.filter(test => test.completedAt).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+  }, [tests, isClient]);
+
+  // ⚡ حذف اختبار
   const deleteTest = useCallback((testId: string) => {
-    setTests((prev) => prev.filter((test) => test.id !== testId));
-  }, [setTests]);
+    if (!isClient) return;
+    
+    setTests(prevTests => prevTests.filter(test => test.id !== testId));
+  }, [setTests, isClient]);
 
-  const getActiveTest = useCallback(() => {
-    return tests.find((test) => test.isActive) || null;
-  }, [tests]);
+  // ⚡ الحصول على الاختبار النشط
+  const getActiveTest = useCallback((): Test | null => {
+    if (!isClient) return null;
+    return tests.find(test => test.isActive) || null;
+  }, [tests, isClient]);
 
-  const startTest = useCallback((testId: string) => {
-    setTests((prev) =>
-      prev.map((test) => ({
-        ...test,
-        isActive: test.id === testId,
-      }))
-    );
-  }, [setTests]);
-
+  // ⚡ إحصائيات الاختبارات
   const getTestStats = useCallback(() => {
-    const completedTests = tests.filter(t => t.completedAt && t.results);
-    
-    return {
-      totalTests: tests.length,
-      completedTests: completedTests.length,
-      averageScore: completedTests.length > 0 
-        ? Math.round(completedTests.reduce((sum, test) => sum + (test.results?.percentage || 0), 0) / completedTests.length)
-        : 0,
-      bestScore: completedTests.length > 0 
-        ? Math.max(...completedTests.map(test => test.results?.percentage || 0))
-        : 0,
-      totalTestTime: completedTests.reduce((sum, test) => sum + (test.results?.timeSpent || 0), 0)
-    };
-  }, [tests]);
+    if (!isClient) {
+      return {
+        totalTests: 0,
+        completedTests: 0,
+        averageScore: 0,
+        bestScore: 0,
+        totalTestTime: 0,
+      };
+    }
 
-  // ⚡ Memoized القيمة النهائية للـ Context
-  const value: AppContextType = useMemo(() => ({
-    // البيانات الأساسية
+    const completedTests = tests.filter(test => test.completedAt && test.results);
+    const totalTests = tests.length;
+    
+    const scores = completedTests.map(test => test.results!.percentage);
+    const averageScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+    const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+    
+    const totalTestTime = completedTests.reduce((sum, test) => sum + (test.results!.timeSpent || 0), 0);
+
+    return {
+      totalTests,
+      completedTests: completedTests.length,
+      averageScore: Math.round(averageScore),
+      bestScore: Math.round(bestScore),
+      totalTestTime,
+    };
+  }, [tests, isClient]);
+
+  // ⚡ حفظ اختبار في التاريخ
+  const saveTestToHistory = useCallback((test: Test) => {
+    if (!isClient) return;
+    
+    setTests(prevTests => [...prevTests, test]);
+  }, [setTests, isClient]);
+
+  // ==========================================
+  // Context Value
+  // ==========================================
+  const value: AppContextType = {
+    // Core Data
     words,
     categories,
     stats,
-    
-    // دوال إدارة الكلمات
+    isClient,
+
+    // Word Management
     addWord,
     updateWord,
     deleteWord,
+
+    // Progress Tracking
     updateProgress,
     updateProgressWithQuality,
+
+    // Category Management
     addCategory,
-    
-    // دوال تصدير واستيراد
+
+    // Data Management
     exportData,
     importData,
-    
-    // دوال إدارة الاختبارات
+
+    // Test Management
     createTest,
     startTest,
     submitTestResults,
@@ -453,38 +633,45 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     getActiveTest,
     getTestStats,
     saveTestToHistory,
-  }), [
-    words,
-    categories,
-    stats,
-    addWord,
-    updateWord,
-    deleteWord,
-    updateProgress,
-    updateProgressWithQuality,
-    addCategory,
-    exportData,
-    importData,
-    createTest,
-    startTest,
-    submitTestResults,
-    getTestHistory,
-    deleteTest,
-    getActiveTest,
-    getTestStats,
-    saveTestToHistory,
-  ]);
+  };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-// Hook لاستخدام الـ Context
+// ==========================================
+// Custom Hook
+// ==========================================
 export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;
 };
 
-export default AppContext;
+// ==========================================
+// Helper Functions
+// ==========================================
+
+// دالة مساعدة لإنشاء خيارات الاختيار المتعدد
+function generateMultipleChoiceOptions(correctWord: Word, allWords: Word[]): string[] {
+  const options = [correctWord.meaning];
+  
+  // إضافة 3 خيارات خاطئة عشوائية
+  const otherWords = allWords.filter(w => w.id !== correctWord.id);
+  const randomWords = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
+  
+  randomWords.forEach(word => {
+    if (options.length < 4) {
+      options.push(word.meaning);
+    }
+  });
+
+  // إذا لم نجد كلمات كافية، أضف خيارات وهمية
+  while (options.length < 4) {
+    options.push(`خيار وهمي ${options.length}`);
+  }
+
+  // خلط الخيارات
+  return options.sort(() => Math.random() - 0.5);
+}

@@ -128,7 +128,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <AppHeader />
 
             {/* Main Content */}
-            <main className="pt-20 pb-24 min-h-screen">{children}</main>
+            <main className="py-12 min-h-screen">{children}</main>
 
             {/* Bottom Navigation */}
             <BottomNavigation />
