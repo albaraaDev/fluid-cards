@@ -604,7 +604,7 @@ export const AnimationStyles = () => (
   `}</style>
 );
 
-export default {
+const EnhancedAnimations = {
   iPadOptimizedButton,
   iPadOptimizedGrid,
   SmoothTransition,
@@ -617,3 +617,5 @@ export default {
   HighContrastToggle,
   AnimationStyles
 };
+
+export default EnhancedAnimations;
