@@ -133,30 +133,6 @@ const validateWord = (word: any): boolean => {
   return true;
 };
 
-// دالة لتصحيح وتحديث بيانات الكلمة
-const sanitizeWord = (word: any): Word => {
-  return {
-    id: Number(word.id),
-    word: String(word.word).trim(),
-    meaning: String(word.meaning).trim(),
-    note: word.note ? String(word.note).trim() : undefined,
-    category: String(word.category).trim(),
-    difficulty: word.difficulty || 'متوسط',
-    lastReviewed: Number(word.lastReviewed) || Date.now(),
-    correctCount: Math.max(0, Number(word.correctCount) || 0),
-    incorrectCount: Math.max(0, Number(word.incorrectCount) || 0),
-    nextReview: Number(word.nextReview) || Date.now(),
-
-    easeFactor: Math.max(1.3, Math.min(3.0, Number(word.easeFactor) || 2.5)),
-    interval: Math.max(1, Math.min(180, Number(word.interval) || 1)),
-    repetition: Math.max(0, Number(word.repetition) || 0),
-    quality:
-      word.quality !== undefined
-        ? Math.max(0, Math.min(5, Number(word.quality)))
-        : undefined,
-  };
-};
-
 // دالة للبحث عن المكررات
 const findDuplicates = (
   importedWords: Word[],
@@ -636,33 +612,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       console.error('خطأ في التصدير:', err);
       alert('حدث خطأ أثناء تصدير البيانات');
     }
-  };
-
-  const validateWord = (word: any): boolean => {
-    // التحقق من الحقول الأساسية
-    if (!word || typeof word !== 'object') return false;
-    if (typeof word.id !== 'number') return false;
-    if (typeof word.word !== 'string' || word.word.trim() === '') return false;
-    if (typeof word.meaning !== 'string' || word.meaning.trim() === '')
-      return false;
-    if (typeof word.category !== 'string' || word.category.trim() === '')
-      return false;
-
-    // التحقق من صحة difficulty
-    const validDifficulties = ['سهل', 'متوسط', 'صعب'];
-    if (!validDifficulties.includes(word.difficulty)) return false;
-
-    // التحقق من الحقول الرقمية
-    if (typeof word.lastReviewed !== 'number' || word.lastReviewed < 0)
-      return false;
-    if (typeof word.correctCount !== 'number' || word.correctCount < 0)
-      return false;
-    if (typeof word.incorrectCount !== 'number' || word.incorrectCount < 0)
-      return false;
-    if (typeof word.nextReview !== 'number' || word.nextReview < 0)
-      return false;
-
-    return true;
   };
 
   // دالة لتصحيح وتحديث بيانات الكلمة

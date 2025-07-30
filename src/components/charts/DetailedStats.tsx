@@ -92,7 +92,7 @@ const DetailedStats: React.FC<DetailedStatsProps> = ({ words }) => {
     if (words.length === 0) return [];
 
     const totalWords = words.length;
-    const masteredWords = words.filter(w => w.correctCount >= 3).length;
+    const masteredWords = words.filter(w => w.repetition >= 3 && w.interval >= 21).length; 
     const averageEaseFactor = words.reduce((sum, w) => sum + w.easeFactor, 0) / words.length;
     const averageSuccess = words.reduce((sum, w) => {
       const total = w.correctCount + w.incorrectCount;
