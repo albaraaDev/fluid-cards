@@ -101,7 +101,7 @@ export interface DifficultyStats {
 }
 
 // Navigation Types
-export type NavigationTab = 'home' | 'cards' | 'study' | 'stats';
+export type NavigationTab = 'home' | 'cards' | 'study' | 'stats' | 'tests';
 
 // Study Mode Types
 export type StudyMode = 
@@ -120,53 +120,80 @@ export interface StudyFilters {
   randomOrder: boolean;
 }
 
-// Test Types (للمراحل القادمة)
-export type TestType = 
-  | 'multiple_choice'     // 4 خيارات
-  | 'typing'             // كتابة الجواب
-  | 'matching'           // مطابقة كلمات/معاني
-  | 'true_false'         // صح/خطأ
-  | 'mixed';             // خليط من الأنواع
+// ==========================================
+// نظام الاختبارات المتقدم - Types جديدة
+// ==========================================
 
+// أنواع الاختبارات المختلفة
+export type TestType = 
+  | 'multiple_choice'     // اختيار متعدد
+  | 'typing'             // كتابة الإجابة
+  | 'matching'           // مطابقة 
+  | 'true_false'         // صح/خطأ
+  | 'mixed';             // خليط
+
+// سؤال واحد في الاختبار
 export interface TestQuestion {
   id: string;
   wordId: number;
   type: TestType;
   question: string;
-  options?: string[];     // للاختيار المتعدد
   correctAnswer: string;
+  options?: string[];     // للاختيار المتعدد
   userAnswer?: string;
-  timeSpent?: number;
+  timeSpent?: number;     // بالثواني
   isCorrect?: boolean;
+  difficulty?: number;    // 1-5
 }
 
-export interface Test {
-  id: string;
-  type: TestType;
-  questions: TestQuestion[];
-  settings: TestSettings;
-  results?: TestResults;
-  createdAt: number;
-  completedAt?: number;
-}
-
+// إعدادات الاختبار
 export interface TestSettings {
-  timeLimit?: number;       // بالثواني
+  type: TestType;
+  timeLimit?: number;       // إجمالي الوقت بالثواني
+  questionTimeLimit?: number; // وقت السؤال الواحد
   questionCount: number;
   categories: string[];
   difficulties: DifficultyFilter[];
   randomOrder: boolean;
   showCorrectAnswer: boolean;
+  instantFeedback: boolean;
+  allowSkip: boolean;
 }
 
+// نتائج الاختبار المفصلة
 export interface TestResults {
-  score: number;           // النقاط
-  percentage: number;      // النسبة المئوية
+  id: string;
+  testId: string;
+  startTime: number;
+  endTime: number;
+  totalScore: number;        // النقاط
+  maxScore: number;         // أقصى نقاط ممكنة
+  percentage: number;       // النسبة المئوية
   totalQuestions: number;
   correctAnswers: number;
-  timeSpent: number;       // بالثواني
+  wrongAnswers: number;
+  skippedAnswers: number;
+  timeSpent: number;        // إجمالي الوقت
   averageTimePerQuestion: number;
   questionsData: TestQuestion[];
+  breakdown: {              // تفصيل الأداء
+    byCategory: Record<string, { correct: number; total: number }>;
+    byDifficulty: Record<string, { correct: number; total: number }>;
+    byType: Record<TestType, { correct: number; total: number }>;
+  };
+}
+
+// الاختبار الكامل
+export interface Test {
+  id: string;
+  name: string;
+  description?: string;
+  settings: TestSettings;
+  questions: TestQuestion[];
+  results?: TestResults;
+  createdAt: number;
+  completedAt?: number;
+  isActive: boolean;
 }
 
 // Error Types
