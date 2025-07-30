@@ -21,18 +21,17 @@ interface MixedTestProps {
   totalQuestions?: number;
 }
 
-export default function MixedTest({ 
-  question, 
-  onAnswer, 
+export default function MixedTest({
+  question,
+  onAnswer,
   timeLeft,
   showResult = false,
   correctAnswer,
   userAnswer,
   isCompleted = false,
   currentQuestionIndex = 1,
-  totalQuestions = 10
+  totalQuestions = 10,
 }: MixedTestProps) {
-  
   const [hasAnimated, setHasAnimated] = useState(false);
   const [typeIndicatorVisible, setTypeIndicatorVisible] = useState(true);
 
@@ -40,13 +39,13 @@ export default function MixedTest({
   useEffect(() => {
     setHasAnimated(false);
     setTypeIndicatorVisible(true);
-    
+
     const timer = setTimeout(() => {
       setHasAnimated(true);
       // Hide type indicator after showing it briefly
       setTimeout(() => setTypeIndicatorVisible(false), 2000);
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [question.id]);
 
@@ -61,7 +60,7 @@ export default function MixedTest({
           color: 'from-blue-600 to-blue-800',
           textColor: 'text-blue-400',
           bgColor: 'bg-blue-900/20',
-          borderColor: 'border-blue-600/50'
+          borderColor: 'border-blue-600/50',
         };
       case 'typing':
         return {
@@ -71,7 +70,7 @@ export default function MixedTest({
           color: 'from-green-600 to-green-800',
           textColor: 'text-green-400',
           bgColor: 'bg-green-900/20',
-          borderColor: 'border-green-600/50'
+          borderColor: 'border-green-600/50',
         };
       case 'matching':
         return {
@@ -81,7 +80,7 @@ export default function MixedTest({
           color: 'from-purple-600 to-purple-800',
           textColor: 'text-purple-400',
           bgColor: 'bg-purple-900/20',
-          borderColor: 'border-purple-600/50'
+          borderColor: 'border-purple-600/50',
         };
       case 'true_false':
         return {
@@ -91,7 +90,7 @@ export default function MixedTest({
           color: 'from-orange-600 to-orange-800',
           textColor: 'text-orange-400',
           bgColor: 'bg-orange-900/20',
-          borderColor: 'border-orange-600/50'
+          borderColor: 'border-orange-600/50',
         };
       default:
         return {
@@ -101,7 +100,7 @@ export default function MixedTest({
           color: 'from-pink-600 to-pink-800',
           textColor: 'text-pink-400',
           bgColor: 'bg-pink-900/20',
-          borderColor: 'border-pink-600/50'
+          borderColor: 'border-pink-600/50',
         };
     }
   };
@@ -112,7 +111,7 @@ export default function MixedTest({
   // Handle answer submission (convert to string for consistency)
   const handleAnswer = (answer: string | Record<string, string> | boolean) => {
     let formattedAnswer: string;
-    
+
     if (typeof answer === 'boolean') {
       formattedAnswer = answer.toString();
     } else if (typeof answer === 'object') {
@@ -120,7 +119,7 @@ export default function MixedTest({
     } else {
       formattedAnswer = answer;
     }
-    
+
     onAnswer(formattedAnswer);
   };
 
@@ -132,46 +131,57 @@ export default function MixedTest({
       showResult,
       correctAnswer,
       userAnswer,
-      isCompleted
+      isCompleted,
     };
 
+    // 🔥 إصلاح: استخدم نوع السؤال الفردي وليس "mixed"
     switch (question.type) {
       case 'multiple_choice':
         return (
           <MultipleChoiceTest
             {...commonProps}
-            onAnswer={(answer: string) => handleAnswer(answer)}
+            onAnswer={(answer: string) => onAnswer(answer)}
           />
         );
-      
+
       case 'typing':
         return (
           <TypingTest
             {...commonProps}
-            onAnswer={(answer: string) => handleAnswer(answer)}
+            onAnswer={(answer: string) => onAnswer(answer)}
           />
         );
-      
+
       case 'matching':
         return (
           <MatchingTest
             {...commonProps}
-            onAnswer={(answer: Record<string, string>) => handleAnswer(answer)}
+            onAnswer={(answer: Record<string, string>) => onAnswer(answer)}
           />
         );
-      
+
       case 'true_false':
         return (
           <TrueFalseTest
             {...commonProps}
-            onAnswer={(answer: boolean) => handleAnswer(answer)}
+            onAnswer={(answer: boolean) => onAnswer(answer)}
           />
         );
-      
+
       default:
         return (
           <div className="text-center text-gray-400 p-8">
-            نوع السؤال غير مدعوم: {question.type}
+            <div className="bg-gray-700/30 border border-gray-600/50 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-2">
+                نوع سؤال غير معروف
+              </h3>
+              <p className="text-gray-400 mb-4">
+                السؤال من نوع &quot;{question.type}&quot; غير مدعوم في الاختبار المختلط
+              </p>
+              <div className="text-sm text-gray-500">
+                معرف السؤال: {question.id}
+              </div>
+            </div>
           </div>
         );
     }
@@ -179,13 +189,13 @@ export default function MixedTest({
 
   return (
     <div className="w-full">
-      
       {/* Mixed Test Header */}
-      <div className={`
+      <div
+        className={`
         relative mb-6 transition-all duration-700 transform
         ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
-      `}>
-        
+      `}
+      >
         {/* Progress Indicator */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -194,10 +204,12 @@ export default function MixedTest({
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">اختبار مختلط</h2>
-              <p className="text-sm text-gray-400">مزيج من جميع أنواع الأسئلة</p>
+              <p className="text-sm text-gray-400">
+                مزيج من جميع أنواع الأسئلة
+              </p>
             </div>
           </div>
-          
+
           <div className="text-right">
             <div className="text-2xl font-bold text-white">
               {currentQuestionIndex} / {totalQuestions}
@@ -208,51 +220,67 @@ export default function MixedTest({
 
         {/* Progress Bar */}
         <div className="w-full bg-gray-800 rounded-full h-2 mb-6">
-          <div 
+          <div
             className="bg-gradient-to-r from-pink-600 to-purple-600 h-2 rounded-full transition-all duration-500"
-            style={{ width: `${(currentQuestionIndex / totalQuestions) * 100}%` }}
+            style={{
+              width: `${(currentQuestionIndex / totalQuestions) * 100}%`,
+            }}
           />
         </div>
 
         {/* Current Question Type Indicator */}
-        <div className={`
+        <div
+          className={`
           mb-6 p-4 rounded-2xl border transition-all duration-500 transform
-          ${typeIndicatorVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
+          ${
+            typeIndicatorVisible
+              ? 'opacity-100 scale-100'
+              : 'opacity-0 scale-95'
+          }
           ${typeInfo.bgColor} ${typeInfo.borderColor}
-        `}>
+        `}
+        >
           <div className="flex items-center space-x-3">
-            <div className={`
+            <div
+              className={`
               w-10 h-10 bg-gradient-to-r ${typeInfo.color} rounded-xl flex items-center justify-center
-            `}>
+            `}
+            >
               <Icon size={20} className="text-white" />
             </div>
             <div>
               <h3 className={`font-bold ${typeInfo.textColor}`}>
                 {typeInfo.title}
               </h3>
-              <p className="text-gray-400 text-sm">
-                {typeInfo.description}
-              </p>
+              <p className="text-gray-400 text-sm">{typeInfo.description}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Dynamic Test Component */}
-      <div className={`
+      <div
+        className={`
         transition-all duration-500 delay-200 transform
         ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-      `}>
+      `}
+      >
         {renderTestComponent()}
       </div>
 
       {/* Question Type Legend (Bottom) */}
       {!showResult && (
-        <div className={`
+        <div
+          className={`
           mt-8 p-4 bg-gray-800/50 rounded-2xl border border-gray-700
           transition-all duration-700 delay-500 transform
-          ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-        `}>
+          ${
+            hasAnimated
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-4'
+          }
+        `}
+        >
           <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center space-x-2">
               <Target size={16} className="text-blue-400" />
