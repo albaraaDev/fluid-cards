@@ -1,4 +1,4 @@
-// src/components/study/StudyModeSlider.tsx
+// src/components/study/StudyModeSlider.tsx - النسخة المحسنة للأداء
 'use client';
 
 import { StudyFilters, StudyMode } from '@/types/flashcard';
@@ -7,13 +7,11 @@ import {
   Brain,
   ChevronLeft,
   ChevronRight,
-  Flame,
   RotateCcw,
-  Timer,
   Trophy,
   Zap,
 } from 'lucide-react';
-import React, { useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import type { Swiper as SwiperType } from 'swiper';
 import { Pagination } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -45,7 +43,8 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
 }) => {
   const swiperRef = useRef<SwiperType>(null);
 
-  const studyModes = [
+  // ⚡ Memoized أنماط الدراسة لتجنب إعادة الإنشاء في كل render
+  const studyModes = useMemo(() => [
     {
       id: 'classic' as StudyMode,
       name: 'النمط الكلاسيكي',
@@ -136,20 +135,80 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
         'لا يحتاج تفاعل كثير',
       ],
     },
-  ];
+  ], []);
 
-  const selectedModeData = studyModes.find((mode) => mode.id === selectedMode);
+  // ⚡ Memoized البحث عن النمط المختار
+  const selectedModeData = useMemo(() => 
+    studyModes.find((mode) => mode.id === selectedMode), 
+    [studyModes, selectedMode]
+  );
 
-  // Handle mode selection from swiper
-  const handleSlideChange = (swiper: SwiperType) => {
+  // ⚡ Memoized معالج تغيير الشريحة
+  const handleSlideChange = useCallback((swiper: SwiperType) => {
     const activeIndex = swiper.activeIndex;
     if (studyModes[activeIndex]) {
       onModeSelect(studyModes[activeIndex].id);
     }
-  };
+  }, [studyModes, onModeSelect]);
 
-  // Get initial slide index
-  const initialSlide = studyModes.findIndex((mode) => mode.id === selectedMode);
+  // ⚡ Memoized الفهرس الابتدائي
+  const initialSlide = useMemo(() => 
+    studyModes.findIndex((mode) => mode.id === selectedMode), 
+    [studyModes, selectedMode]
+  );
+
+  // ⚡ Memoized أزرار التنقل
+  const navigationButtons = useMemo(() => ({
+    prevButton: (
+      <button
+        onClick={() => swiperRef.current?.slidePrev()}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-gray-800/80 hover:bg-gray-700/80 rounded-full flex items-center justify-center border border-gray-600 hover:border-gray-500 transition-all touch-manipulation"
+        aria-label="النمط السابق"
+      >
+        <ChevronLeft size={20} className="text-white" />
+      </button>
+    ),
+    nextButton: (
+      <button
+        onClick={() => swiperRef.current?.slideNext()}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-gray-800/80 hover:bg-gray-700/80 rounded-full flex items-center justify-center border border-gray-600 hover:border-gray-500 transition-all touch-manipulation"
+        aria-label="النمط التالي"
+      >
+        <ChevronRight size={20} className="text-white" />
+      </button>
+    )
+  }), []);
+
+  // ⚡ Memoized تكوين Swiper
+  const swiperConfig = useMemo(() => ({
+    onBeforeInit: (swiper: SwiperType) => {
+      swiperRef.current = swiper;
+    },
+    modules: [Pagination],
+    spaceBetween: 24,
+    slidesPerView: 1,
+    initialSlide: initialSlide >= 0 ? initialSlide : 0,
+    onSlideChange: handleSlideChange,
+    pagination: {
+      clickable: true,
+      bulletClass: 'swiper-pagination-bullet !bg-gray-600 !opacity-50',
+      bulletActiveClass: 'swiper-pagination-bullet-active !bg-purple-500 !opacity-100',
+    },
+    breakpoints: {
+      640: {
+        slidesPerView: 1,
+        spaceBetween: 20,
+      },
+      768: {
+        slidesPerView: 1,
+        spaceBetween: 24,
+      },
+      1024: {
+        slidesPerView: 1,
+        spaceBetween: 32,
+      },
+    },
+  }), [initialSlide, handleSlideChange]);
 
   return (
     <div className={`max-w-7xl mx-auto space-y-6 lg:space-y-8 ${className}`}>
@@ -167,226 +226,96 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
         {/* Study Modes Slider */}
         <div className="relative">
           <Swiper
-            onBeforeInit={(swiper) => {
-              swiperRef.current = swiper;
-            }}
-            modules={[Pagination]}
-            spaceBetween={24}
-            slidesPerView={1}
-            initialSlide={initialSlide >= 0 ? initialSlide : 0}
-            // onSlideChange={handleSlideChange}
-            centeredSlides={true}
-            grabCursor={true}
-            loop={false}
-            speed={400}
-            pagination={{
-              clickable: true,
-              bulletClass: 'swiper-pagination-bullet !bg-gray-600 !opacity-50',
-              bulletActiveClass:
-                'swiper-pagination-bullet-active !bg-blue-500 !opacity-100',
-              modifierClass: 'swiper-pagination-',
-            }}
-            className="!p-4"
+            {...swiperConfig}
+            className="study-modes-swiper pb-12"
           >
-            {studyModes.map((mode, index) => (
-              <SwiperSlide key={mode.id}>
-                <div
-                  className={`
-                  relative overflow-hidden rounded-3xl border-2 transition-all duration-500 cursor-pointer
-                  transform hover:scale-[1.02] active:scale-[0.98] touch-manipulation
-                  ${
-                    selectedMode === mode.id
-                      ? `${mode.borderColor} bg-gradient-to-br ${mode.bgColor} shadow-2xl ring-2 ring-blue-500/30`
-                      : 'border-gray-700/50 bg-gray-800/40 hover:border-gray-600/50 hover:bg-gray-800/60'
-                  }
-                `}
-                  onClick={() => onModeSelect(mode.id)}
-                >
-                  {/* Background Gradient */}
-                  {selectedMode === mode.id && (
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-br ${mode.color} opacity-5`}
-                    />
-                  )}
+            {studyModes.map((mode) => {
+              const Icon = mode.icon;
+              const isSelected = selectedMode === mode.id;
 
-                  <div className="relative p-6 lg:p-8">
+              return (
+                <SwiperSlide key={mode.id}>
+                  <div
+                    className={`
+                      ${mode.bgColor} rounded-3xl p-6 lg:p-8 border-2 transition-all duration-300 cursor-pointer touch-manipulation h-full
+                      ${
+                        isSelected
+                          ? `${mode.borderColor} shadow-2xl scale-105`
+                          : 'border-gray-700 hover:border-gray-600'
+                      }
+                    `}
+                    onClick={() => onModeSelect(mode.id)}
+                  >
                     {/* Header */}
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`
-                        w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center
-                        ${
-                          selectedMode === mode.id
-                            ? `bg-gradient-to-br ${mode.color}`
-                            : 'bg-gray-700/50'
-                        }
-                      `}
-                        >
-                          <mode.icon
-                            size={selectedMode === mode.id ? 32 : 28}
-                            className="text-white"
-                          />
-                        </div>
-                        <div>
-                          <h3
-                            className={`
-                          text-xl lg:text-2xl font-bold mb-2 transition-colors
-                          ${
-                            selectedMode === mode.id
-                              ? 'text-white'
-                              : 'text-gray-300'
-                          }
-                        `}
-                          >
-                            {mode.name}
-                          </h3>
-                          <div className="flex items-center space-x-3 text-sm">
-                            <span
-                              className={`
-                            px-3 py-1 rounded-full font-medium
-                            ${
-                              mode.difficulty === 'سهل'
-                                ? 'bg-green-900/30 text-green-400 border border-green-800/50'
-                                : mode.difficulty === 'متوسط'
-                                ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50'
-                                : 'bg-red-900/30 text-red-400 border border-red-800/50'
-                            }
-                          `}
-                            >
-                              {mode.difficulty}
-                            </span>
-                            <span className="flex items-center space-x-1 text-gray-400">
-                              <Timer size={14} />
-                              <span>{mode.time}</span>
-                            </span>
-                          </div>
+                    <div className="flex items-center space-x-4 mb-6">
+                      <div className={`
+                        w-16 h-16 lg:w-20 lg:h-20 bg-gradient-to-br ${mode.color} rounded-2xl lg:rounded-3xl flex items-center justify-center shadow-lg
+                      `}>
+                        <Icon size={32} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl lg:text-2xl font-bold text-white mb-2">
+                          {mode.name}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <span className={`
+                            px-3 py-1 rounded-full text-xs font-semibold
+                            ${mode.difficulty === 'سهل' ? 'bg-green-600/20 text-green-400' :
+                              mode.difficulty === 'متوسط' ? 'bg-yellow-600/20 text-yellow-400' :
+                              'bg-red-600/20 text-red-400'}
+                          `}>
+                            {mode.difficulty}
+                          </span>
+                          <span className="text-gray-400">{mode.time}</span>
                         </div>
                       </div>
-
-                      {/* Selection Indicator */}
-                      {selectedMode === mode.id && (
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xl">✓</span>
-                        </div>
-                      )}
                     </div>
+
                     {/* Description */}
-                    <p
-                      className={`
-                    text-base lg:text-lg leading-relaxed mb-6 transition-colors h-14
-                    ${
-                      selectedMode === mode.id
-                        ? 'text-gray-200'
-                        : 'text-gray-400'
-                    }
-                  `}
-                    >
+                    <p className="text-gray-300 text-base lg:text-lg mb-6 leading-relaxed">
                       {mode.description}
                     </p>
+
                     {/* Features */}
-                    <div className="grid grid-cols-1 gap-3 mb-6">
-                      {mode.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center space-x-2">
-                          <span
-                            className={`
-                          ${
-                            selectedMode === mode.id
-                              ? mode.id === 'classic'
-                                ? 'text-blue-400'
-                                : mode.id === 'speed'
-                                ? 'text-yellow-400'
-                                : mode.id === 'reverse'
-                                ? 'text-green-400'
-                                : mode.id === 'challenge'
-                                ? 'text-purple-400'
-                                : 'text-indigo-400'
-                              : 'text-gray-500'
-                          }
-                        `}
-                          >
-                            ✓
-                          </span>
-                          <span
-                            className={`
-                          text-sm lg:text-base transition-colors
-                          ${
-                            selectedMode === mode.id
-                              ? 'text-gray-300'
-                              : 'text-gray-500'
-                          }
-                        `}
-                          >
-                            {feature}
-                          </span>
+                    <div className="space-y-3">
+                      {mode.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full"></div>
+                          <span className="text-gray-300 text-sm lg:text-base">{feature}</span>
                         </div>
                       ))}
                     </div>
-                    {/* Select Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStartStudy();
-                      }}
-                      disabled={wordsCount === 0 || selectedMode !== mode.id}
-                      className={`
-                        w-full flex items-center justify-center space-x-3 py-4 lg:py-5 rounded-2xl 
-                        font-bold text-lg transition-all hover:scale-105 active:scale-95 touch-manipulation
-                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                        bg-gradient-to-r ${mode.color}  text-white shadow-lg hover:shadow-xl
-                      `}
-                    >
-                      <Flame size={20} />
-                      <span>ابدأ الدراسة</span>
-                      <span className="text-sm opacity-80">
-                        ({wordsCount} كلمة)
-                      </span>
-                    </button>
+
+                    {/* Selection Indicator */}
+                    {isSelected && (
+                      <div className="mt-6 flex items-center justify-center">
+                        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                          ✅ مختار حالياً
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </SwiperSlide>
-            ))}
+                </SwiperSlide>
+              );
+            })}
           </Swiper>
+
+          {/* Navigation Buttons */}
+          {navigationButtons.prevButton}
+          {navigationButtons.nextButton}
         </div>
 
-        {/* Session Preview - Only show for selected mode */}
-        {selectedModeData && (
-          <div className=" max-md:px-4 md:pt-4">
-            <SessionPreview
-              words={filteredWords}
-              mode={selectedMode}
-              filters={filters}
-            />
-          </div>
-        )}
+        {/* Session Preview */}
+        <div className="mt-6 md:mt-0">
+          <SessionPreview
+            selectedMode={selectedMode}
+            wordsCount={wordsCount}
+            filteredWords={filteredWords}
+            filters={filters}
+            onStartStudy={onStartStudy}
+          />
+        </div>
       </div>
-
-      {/* Custom Swiper Styles */}
-      <style jsx global>{`
-        .swiper-pagination {
-          position: relative !important;
-          margin-top: 2rem !important;
-        }
-
-        .swiper-pagination-bullet {
-          width: 12px !important;
-          height: 12px !important;
-          margin: 0 6px !important;
-          border-radius: 50% !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .swiper-pagination-bullet-active {
-          width: 32px !important;
-          border-radius: 6px !important;
-        }
-
-        @media (max-width: 640px) {
-          .swiper-slide {
-            height: auto !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };
