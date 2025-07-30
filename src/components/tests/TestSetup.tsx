@@ -162,15 +162,15 @@ export default function TestSetup({
   // ==========================================
   const handleStartTest = () => {
     console.log('🚀 TestSetup: Starting test with final settings:', settings);
-    
+
     if (canStartTest) {
       // التأكد من أن النوع محدد بشكل صحيح
-      if (!settings.type || settings.type === '') {
+      if (!settings.type) {
         console.error('❌ TestSetup: Test type is not set');
         alert('يرجى اختيار نوع الاختبار');
         return;
       }
-      
+
       console.log('✅ TestSetup: All validations passed, creating test');
       onStartTest(settings);
     } else {
@@ -203,8 +203,11 @@ export default function TestSetup({
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
 
   const nextStep = () => {
-    console.log('➡️ TestSetup: Moving to next step. Current type:', settings.type);
-    
+    console.log(
+      '➡️ TestSetup: Moving to next step. Current type:',
+      settings.type
+    );
+
     const nextIndex = Math.min(currentStepIndex + 1, steps.length - 1);
     setCurrentStep(steps[nextIndex].id as SetupStep);
   };
@@ -222,9 +225,13 @@ export default function TestSetup({
   const renderTypeStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">اختر نوع الاختبار</h2>
-        <p className="text-gray-400 text-lg">كل نوع له طريقة مختلفة لاختبار معرفتك</p>
-        
+        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">
+          اختر نوع الاختبار
+        </h2>
+        <p className="text-gray-400 text-lg">
+          كل نوع له طريقة مختلفة لاختبار معرفتك
+        </p>
+
         {/* Debug info - سيختفي في production */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-4 p-2 bg-gray-800 rounded text-sm text-gray-400">
@@ -232,12 +239,12 @@ export default function TestSetup({
           </div>
         )}
       </div>
-  
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {testTypes.map((testType) => {
           const Icon = testType.icon;
           const isSelected = settings.type === testType.type;
-          
+
           return (
             <button
               key={testType.type}
@@ -248,9 +255,10 @@ export default function TestSetup({
               className={`
                 relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl border-2 transition-all duration-300 text-right
                 hover:scale-[1.02] active:scale-[0.98] touch-manipulation
-                ${isSelected 
-                  ? `bg-gradient-to-br ${testType.color} ${testType.borderColor} shadow-2xl` 
-                  : 'bg-gray-800/50 border-gray-700 hover:border-gray-600 hover:bg-gray-800/70'
+                ${
+                  isSelected
+                    ? `bg-gradient-to-br ${testType.color} ${testType.borderColor} shadow-2xl`
+                    : 'bg-gray-800/50 border-gray-700 hover:border-gray-600 hover:bg-gray-800/70'
                 }
               `}
             >
@@ -262,28 +270,48 @@ export default function TestSetup({
                   </div>
                 </div>
               )}
-  
+
               {/* Icon */}
-              <div className={`mb-4 ${isSelected ? 'text-white' : testType.textColor}`}>
+              <div
+                className={`mb-4 ${
+                  isSelected ? 'text-white' : testType.textColor
+                }`}
+              >
                 <Icon size={32} className="lg:w-10 lg:h-10" />
               </div>
-  
+
               {/* Content */}
-              <h3 className={`text-xl lg:text-2xl font-bold mb-2 ${isSelected ? 'text-white' : 'text-gray-200'}`}>
+              <h3
+                className={`text-xl lg:text-2xl font-bold mb-2 ${
+                  isSelected ? 'text-white' : 'text-gray-200'
+                }`}
+              >
                 {testType.title}
               </h3>
-              <p className={`text-sm lg:text-base mb-4 ${isSelected ? 'text-gray-100' : 'text-gray-400'}`}>
+              <p
+                className={`text-sm lg:text-base mb-4 ${
+                  isSelected ? 'text-gray-100' : 'text-gray-400'
+                }`}
+              >
                 {testType.description}
               </p>
-  
+
               {/* Meta Info */}
               <div className="flex items-center justify-between text-xs lg:text-sm">
-                <span className={`px-3 py-1 rounded-full ${
-                  isSelected ? 'bg-white/20 text-white' : 'bg-gray-700 text-gray-300'
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full ${
+                    isSelected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-700 text-gray-300'
+                  }`}
+                >
                   {testType.difficulty}
                 </span>
-                <span className={`flex items-center space-x-1 ${isSelected ? 'text-gray-100' : 'text-gray-400'}`}>
+                <span
+                  className={`flex items-center space-x-1 ${
+                    isSelected ? 'text-gray-100' : 'text-gray-400'
+                  }`}
+                >
                   <Clock size={14} />
                   <span>{testType.timePerQuestion}ث/سؤال</span>
                 </span>
@@ -292,33 +320,38 @@ export default function TestSetup({
           );
         })}
       </div>
-  
+
       {/* Additional Info for Selected Type */}
       <div className="bg-gray-800/30 rounded-2xl p-6 border border-gray-700">
         <h3 className="text-white font-bold mb-3">معلومات إضافية:</h3>
         {settings.type === 'multiple_choice' && (
           <p className="text-gray-300">
-            ستواجه أسئلة مع 4 خيارات، واحد منها صحيح. هذا النوع مناسب للمبتدئين ولقياس المعرفة الأساسية.
+            ستواجه أسئلة مع 4 خيارات، واحد منها صحيح. هذا النوع مناسب للمبتدئين
+            ولقياس المعرفة الأساسية.
           </p>
         )}
         {settings.type === 'typing' && (
           <p className="text-gray-300">
-            ستحتاج لكتابة الإجابة بنفسك. هذا النوع أكثر صعوبة ويقيس مدى حفظك الدقيق للكلمات.
+            ستحتاج لكتابة الإجابة بنفسك. هذا النوع أكثر صعوبة ويقيس مدى حفظك
+            الدقيق للكلمات.
           </p>
         )}
         {settings.type === 'matching' && (
           <p className="text-gray-300">
-            ستربط بين الكلمات ومعانيها عن طريق السحب والإفلات أو النقر. مناسب لتعلم مجموعات من الكلمات.
+            ستربط بين الكلمات ومعانيها عن طريق السحب والإفلات أو النقر. مناسب
+            لتعلم مجموعات من الكلمات.
           </p>
         )}
         {settings.type === 'true_false' && (
           <p className="text-gray-300">
-            ستحدد ما إذا كانت جملة معينة صحيحة أم خاطئة. هذا النوع سريع ومناسب للمراجعة السريعة.
+            ستحدد ما إذا كانت جملة معينة صحيحة أم خاطئة. هذا النوع سريع ومناسب
+            للمراجعة السريعة.
           </p>
         )}
         {settings.type === 'mixed' && (
           <p className="text-gray-300">
-            ستواجه مزيج من جميع أنواع الأسئلة. هذا يوفر تجربة متنوعة ويختبر معرفتك بطرق مختلفة.
+            ستواجه مزيج من جميع أنواع الأسئلة. هذا يوفر تجربة متنوعة ويختبر
+            معرفتك بطرق مختلفة.
           </p>
         )}
       </div>

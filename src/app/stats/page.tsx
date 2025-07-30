@@ -132,7 +132,7 @@ export default function StatsPage() {
       learningVelocity,
       weeklyProgress: [65, 72, 78, 85, 88, 92, stats.progress], // محاكاة
     };
-  }, [words, stats.progress]);
+  }, [words, stats.progress, statsTimestamp]);
 
   // بطاقات الإحصائيات الرئيسية
   const mainStatCards = [

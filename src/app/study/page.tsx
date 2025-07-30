@@ -159,6 +159,7 @@ export default function StudyPage() {
       handleAnswer(1); // Consider timeout as difficult
     }
   }, [timeLeft, isPaused, currentMode, isStudyActive, showResult]);
+  
 
   // Auto advance for reading mode
   useEffect(() => {

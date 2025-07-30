@@ -3,6 +3,7 @@
 
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Test, TestResults, TestSettings, Word } from '@/types/flashcard';
+import { QuestionGenerator } from '@/utils/QuestionGenerator';
 import React, { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
 
 // الكلمات الافتراضية
@@ -904,9 +905,6 @@ ${invalidWords.length > 0 ? '⚠️ تم تجاهل الكلمات غير الص
   const createTest = (settings: TestSettings): Test => {
     try {
       console.log('🎯 AppContext: Creating test with settings:', settings);
-      
-      // Import QuestionGenerator
-      const { QuestionGenerator } = require('@/utils/QuestionGenerator');
       
       // Filter words based on settings
       const availableWords = QuestionGenerator.filterWordsForTest(
