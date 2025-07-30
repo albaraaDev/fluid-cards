@@ -372,13 +372,6 @@ export default function TestsPage() {
       <div className="text-center mb-8 lg:mb-12">
         <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4">مركز الاختبارات</h1>
         <p className="text-xl text-gray-400">اختبر معرفتك وتتبع تقدمك مع أنواع مختلفة من الاختبارات</p>
-        
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-2 bg-gray-800 rounded text-sm text-gray-400">
-            Debug: {tests.length} tests in history
-          </div>
-        )}
       </div>
 
       {/* Quick Tests Section */}
@@ -388,7 +381,7 @@ export default function TestsPage() {
           <div className="text-sm text-gray-400">ابدأ فوراً</div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
           {quickTests.map((quickTest) => {
             const Icon = quickTest.icon;
             

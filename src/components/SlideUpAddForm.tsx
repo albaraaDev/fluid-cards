@@ -140,7 +140,7 @@ const SlideUpAddForm: React.FC<SlideUpAddFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50">
       <div className={`
         bg-gray-800 rounded-t-3xl w-full max-w-lg max-h-[90vh] overflow-hidden
         transform transition-all duration-300 ease-out border border-gray-700 border-b-0

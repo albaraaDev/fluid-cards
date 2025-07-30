@@ -126,7 +126,7 @@ export default function CardsPage() {
             <h3 className="text-lg lg:text-xl font-bold text-white group-hover:text-blue-400 transition-colors mb-2">
               {word.word}
             </h3>
-            <p className="text-gray-400 text-sm lg:text-base line-clamp-2">
+            <p className="text-gray-400 text-sm lg:text-base line-clamp-2 h-12">
               {word.meaning}
             </p>
           </div>
@@ -186,7 +186,7 @@ export default function CardsPage() {
         {/* Note Preview */}
         {word.note && (
           <div className="mt-3 p-2 bg-gray-700/50 rounded-lg">
-            <p className="text-xs lg:text-sm text-gray-400 line-clamp-1">
+            <p className="text-xs lg:text-sm text-gray-400 line-clamp-1" dir='ltr'>
               📝 {word.note}
             </p>
           </div>
@@ -238,7 +238,7 @@ export default function CardsPage() {
           {/* Filter Toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-3 rounded-xl transition-all border touch-manipulation ${
+            className={`p-4 rounded-xl transition-all border touch-manipulation ${
               showFilters
                 ? 'bg-blue-900/30 text-blue-400 border-blue-800/50'
                 : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-300'
