@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>غير متصل - Fluid Cards</title>
+    <title>Fluid Cards - غير متصل</title>
     <style>
         * {
             margin: 0;
@@ -12,69 +12,76 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #ec4899 100%);
+            font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: white;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            text-align: center;
-            padding: 20px;
+            direction: rtl;
         }
 
         .container {
-            max-width: 400px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(16px);
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
             border-radius: 24px;
-            padding: 40px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
         .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
             opacity: 0.8;
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 16px;
-            background: linear-gradient(45deg, #ffffff, #cbd5e1);
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         p {
-            font-size: 16px;
+            font-size: 1.1rem;
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 2rem;
             opacity: 0.9;
         }
 
         .button {
-            display: inline-block;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             color: white;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
             border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 16px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 200px;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
 
         .button:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .status {
@@ -108,23 +115,64 @@
                 transform: translateY(-10px);
             }
         }
+
+        .offline-features {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .offline-features h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+        }
+
+        .feature-list {
+            list-style: none;
+            text-align: right;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            opacity: 0.8;
+        }
+
+        .feature-list li::before {
+            content: "✓ ";
+            color: #10b981;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="icon floating">📚</div>
-        <h1>غير متصل بالإنترنت</h1>
+        <h1>Fluid Cards</h1>
         <p>
-            تطبيق Fluid Cards غير متاح حالياً. 
-            يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.
+            أنت الآن في الوضع غير المتصل. يمكنك الاستمرار في استخدام التطبيق مع البيانات المحفوظة محلياً.
         </p>
         
-        <button class="button" onclick="checkConnection()">
-            إعادة المحاولة
+        <button class="button" onclick="checkConnection()" id="retryBtn">
+            التحقق من الاتصال
         </button>
         
         <div class="status">
-            <span id="status" class="pulse">جاري التحقق من الاتصال...</span>
+            <span id="status" class="pulse">جاري التحقق من الحالة...</span>
+        </div>
+
+        <div class="offline-features">
+            <h3>متاح في الوضع غير المتصل:</h3>
+            <ul class="feature-list">
+                <li>مراجعة الكلمات المحفوظة</li>
+                <li>إضافة كلمات جديدة</li>
+                <li>إجراء الاختبارات</li>
+                <li>عرض الإحصائيات</li>
+                <li>تصدير البيانات</li>
+            </ul>
         </div>
     </div>
 
@@ -134,23 +182,23 @@
 
         function checkConnection() {
             const status = document.getElementById('status');
-            const button = document.querySelector('.button');
+            const button = document.getElementById('retryBtn');
             
             button.textContent = 'جاري التحقق...';
             button.disabled = true;
             status.textContent = 'جاري التحقق من الاتصال...';
             
-            // محاولة جلب صفحة صغيرة للتحقق من الاتصال
+            // محاولة جلب الصفحة الرئيسية
             fetch('/', { 
                 method: 'HEAD',
                 cache: 'no-cache'
             })
             .then(response => {
                 if (response.ok) {
-                    status.textContent = 'تم استعادة الاتصال! جاري إعادة التحميل...';
+                    status.textContent = '✅ تم استعادة الاتصال! جاري إعادة التحميل...';
                     status.style.color = '#10b981';
                     setTimeout(() => {
-                        window.location.reload();
+                        window.location.href = '/';
                     }, 1000);
                 } else {
                     throw new Error('No connection');
@@ -162,37 +210,20 @@
                 button.disabled = false;
                 
                 if (retryCount >= maxRetries) {
-                    status.textContent = 'لا يمكن الاتصال بالخادم. يرجى المحاولة لاحقاً.';
+                    status.textContent = '❌ لا يمكن الاتصال بالخادم حالياً.';
                     status.style.color = '#ef4444';
                 } else {
-                    status.textContent = `فشل الاتصال. المحاولة ${retryCount} من ${maxRetries}`;
+                    status.textContent = `فشل الاتصال. المحاولة ${retryCount}/${maxRetries}`;
                     status.style.color = '#f59e0b';
                 }
             });
         }
 
-        // التحقق التلقائي من الاتصال كل 30 ثانية
-        setInterval(() => {
-            if (navigator.onLine && retryCount < maxRetries) {
-                checkConnection();
-            }
-        }, 30000);
-
-        // الاستماع لأحداث الاتصال
-        window.addEventListener('online', () => {
-            const status = document.getElementById('status');
-            status.textContent = 'تم استعادة الاتصال! جاري إعادة التحميل...';
-            status.style.color = '#10b981';
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        });
-
-        window.addEventListener('offline', () => {
-            const status = document.getElementById('status');
-            status.textContent = 'انقطع الاتصال بالإنترنت';
-            status.style.color = '#ef4444';
-        });
+        // التحقق التلقائي كل 30 ثانية
+        setInterval(checkConnection, 30000);
+        
+        // التحقق الأولي بعد تحميل الصفحة
+        setTimeout(checkConnection, 2000);
     </script>
 </body>
 </html>

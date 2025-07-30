@@ -11,17 +11,25 @@ const cairo = Cairo({
   display: 'swap',
   variable: '--font-cairo',
   weight: ['400', '500', '600', '700'],
-})
+});
 
 // const APP_VERSION = "2.0.0";
 
 export const metadata: Metadata = {
   title: {
     default: 'Fluid Cards - بطاقات تعليمية ذكية',
-    template: '%s | Fluid Cards'
+    template: '%s | Fluid Cards',
   },
-  description: 'تطبيق بطاقات تعليمية ذكي مع تصميم زجاجي عصري. ادرس وراجع بطريقة تفاعلية وممتعة.',
-  keywords: ['بطاقات تعليمية', 'مراجعة', 'دراسة', 'تعليم', 'فلاش كاردز', 'مذاكرة'],
+  description:
+    'تطبيق بطاقات تعليمية ذكي مع تصميم زجاجي عصري. ادرس وراجع بطريقة تفاعلية وممتعة.',
+  keywords: [
+    'بطاقات تعليمية',
+    'مراجعة',
+    'دراسة',
+    'تعليم',
+    'فلاش كاردز',
+    'مذاكرة',
+  ],
   authors: [{ name: 'Fluid Cards Team' }],
   creator: 'Fluid Cards',
   publisher: 'Fluid Cards',
@@ -30,7 +38,9 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  ),
   alternates: {
     canonical: '/',
   },
@@ -109,21 +119,38 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ar" dir="rtl" className={cairo.variable}>
-      <body className={`bg-slate-900 text-white antialiased overflow-x-hidden ${cairo.className} font-sans antialiased`}>
+      <body
+        className={`bg-slate-900 text-white antialiased overflow-x-hidden ${cairo.className} font-sans antialiased`}
+      >
         <AppProvider>
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
             {/* Header */}
             <AppHeader />
-            
+
             {/* Main Content */}
-            <main className="pt-20 pb-24 min-h-screen">
-              {children}
-            </main>
-            
+            <main className="pt-20 pb-24 min-h-screen">{children}</main>
+
             {/* Bottom Navigation */}
             <BottomNavigation />
           </div>
         </AppProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                      console.log('✅ SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                      console.log('❌ SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
