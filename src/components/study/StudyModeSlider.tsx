@@ -43,7 +43,7 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
   filters,
   className = '',
 }) => {
-  const swiperRef = useRef<SwiperType>();
+  const swiperRef = useRef<SwiperType>(null);
 
   const studyModes = [
     {

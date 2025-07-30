@@ -1,6 +1,7 @@
-// src/app/page.tsx
+// src/app/page.tsx - نفس النسخة القديمة مع إصلاح Hydration فقط
 'use client';
 
+import ClientOnly from '@/components/ClientOnly';
 import EditWordModal from '@/components/EditWordModal';
 import WordDetailsModal from '@/components/WordDetailsModal';
 import { useApp } from '@/context/AppContext';
@@ -21,21 +22,32 @@ import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 
 export default function HomePage() {
-  const { words, stats, updateWord, deleteWord, categories, addCategory } =
+  const { words, stats, updateWord, deleteWord, categories, addCategory, isClient } =
     useApp();
   const [homeTimestamp] = useState(() => Date.now());
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [editingWord, setEditingWord] = useState<Word | null>(null);
 
-  // الكلمات العشوائية للمراجعة
+  // الكلمات العشوائية للمراجعة - Fixed for hydration
   const randomUnmasteredWords = useMemo(() => {
-    if (words.length === 0) return []; // ✅ مصفوفة فارغة للمستخدم الجديد
+    if (!isClient || words.length === 0) return []; // ✅ حماية من SSR
 
     const unmastered = words.filter(
       (w) => !(w.repetition >= 3 && w.interval >= 21)
     );
-    return unmastered.sort(() => Math.random() - 0.5).slice(0, 6);
-  }, [words]);
+    
+    // استخدام homeTimestamp كـ seed للاستقرار بين server/client
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    return unmastered
+      .map(word => ({ word, sort: seededRandom(word.id + homeTimestamp) }))
+      .sort((a, b) => a.sort - b.sort)
+      .slice(0, 6)
+      .map(item => item.word);
+  }, [words, homeTimestamp, isClient]);
 
   // إحصائيات بطاقات الحالة
   const statCards = [
@@ -84,7 +96,63 @@ export default function HomePage() {
     }
   };
 
-  return (
+  // Static content for server-side rendering
+  const StaticContent = () => (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      {/* Welcome Section - Static */}
+      <div className="mb-8 lg:mb-12">
+        <div className="text-center lg:text-right">
+          <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+            أهلاً بك في رحلة التعلم! 🚀
+          </h1>
+          <p className="text-lg lg:text-xl text-gray-400 mb-6">
+            ابدأ رحلتك التعليمية بإضافة أول كلمة!
+          </p>
+        </div>
+      </div>
+
+      {/* Stats Grid - Loading state */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 lg:mb-12">
+        {[1, 2, 3, 4].map((index) => (
+          <div
+            key={index}
+            className="bg-gray-800/50 rounded-2xl lg:rounded-3xl p-4 lg:p-6 border border-gray-700/50 animate-pulse"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 lg:p-3 bg-gray-700 rounded-xl lg:rounded-2xl w-12 h-12">
+              </div>
+            </div>
+            <div className="h-8 bg-gray-700 rounded mb-1"></div>
+            <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State - Default */}
+      <div className="text-center py-16 lg:py-24">
+        <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-6 lg:mb-8 flex items-center justify-center">
+          <Award size={32} className="text-white lg:w-12 lg:h-12" />
+        </div>
+        <h3 className="text-2xl lg:text-3xl font-bold text-white mb-4">
+          ابدأ رحلتك التعليمية!
+        </h3>
+        <p className="text-gray-400 mb-8 text-lg lg:text-xl max-w-md mx-auto leading-relaxed">
+          أضف كلماتك الأولى وابدأ في بناء مفرداتك بطريقة ذكية ومنظمة
+        </p>
+
+        <Link
+          href="/cards"
+          className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white px-8 lg:px-10 py-4 lg:py-5 rounded-2xl font-semibold transition-all hover:scale-105 active:scale-95 touch-manipulation"
+        >
+          <BookOpen size={20} />
+          <span>استكشف البطاقات</span>
+        </Link>
+      </div>
+    </div>
+  );
+
+  // Dynamic content for client-side (exact same as original)
+  const DynamicContent = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
       {/* Welcome Section */}
       <div className="mb-8 lg:mb-12">
@@ -306,7 +374,7 @@ export default function HomePage() {
           word={editingWord}
           categories={categories}
           onSave={(updatedWord) => {
-            updateWord(updatedWord);
+            updateWord(updatedWord.id, updatedWord);
             setEditingWord(null);
           }}
           onCancel={() => setEditingWord(null)}
@@ -314,5 +382,11 @@ export default function HomePage() {
         />
       )}
     </div>
+  );
+
+  return (
+    <ClientOnly fallback={<StaticContent />}>
+      <DynamicContent />
+    </ClientOnly>
   );
 }
