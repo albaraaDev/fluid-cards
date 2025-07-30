@@ -312,10 +312,16 @@ export default function TestManager({
       case 'typing':
         // Use the smart validation from QuestionGenerator
         try {
-          return QuestionGenerator.validateTypingAnswer(userAnswer, question.correctAnswer);
+          return QuestionGenerator.validateTypingAnswer(
+            userAnswer,
+            question.correctAnswer
+          );
         } catch {
           // Fallback to simple comparison
-          return userAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+          return (
+            userAnswer.toLowerCase().trim() ===
+            question.correctAnswer.toLowerCase().trim()
+          );
         }
 
       case 'matching':
@@ -488,7 +494,7 @@ export default function TestManager({
       isCompleted: testState === 'completed',
     };
 
-    // For mixed test, pass additional props
+    // 🔥 إصلاح: للاختبار المختلط، مرر props إضافية
     if (test.settings.type === 'mixed') {
       return (
         <MixedTest
@@ -500,7 +506,7 @@ export default function TestManager({
       );
     }
 
-    // Individual test components
+    // 🔥 إصلاح: للاختبارات الفردية، استخدم نوع السؤال وليس نوع الاختبار
     switch (currentQuestion.type) {
       case 'multiple_choice':
         return <MultipleChoiceTest {...commonProps} onAnswer={handleAnswer} />;
@@ -512,7 +518,20 @@ export default function TestManager({
         return <TrueFalseTest {...commonProps} onAnswer={handleAnswer} />;
       default:
         return (
-          <div className="text-center text-red-400">نوع السؤال غير مدعوم</div>
+          <div className="text-center text-red-400 p-8">
+            <div className="bg-red-900/20 border border-red-600/50 rounded-2xl p-6">
+              <h3 className="text-xl font-bold mb-2">نوع السؤال غير مدعوم</h3>
+              <p className="text-gray-300 mb-4">
+                نوع السؤال &quot;{currentQuestion.type}&quot; غير متاح حالياً
+              </p>
+              <button
+                onClick={() => handleSkipQuestion()}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl transition-all"
+              >
+                تخطي السؤال
+              </button>
+            </div>
+          </div>
         );
     }
   };
