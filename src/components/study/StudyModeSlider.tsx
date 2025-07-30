@@ -48,7 +48,7 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
   const studyModes = [
     {
       id: 'classic' as StudyMode,
-      name: 'النمط الكلاسيكي',
+      name: 'الكلاسيكي',
       description: 'مراجعة تقليدية مع تقييم متدرج وخوارزمية SM-2 الذكية',
       icon: Brain,
       color: 'from-blue-500 to-purple-600',
@@ -96,7 +96,7 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
       features: [
         'يبدأ بالمعنى',
         'يقوي الذاكرة النشطة',
-        'أصعب من النمط الكلاسيكي',
+        'أصعب من الكلاسيكي',
         'يختبر الفهم العميق',
       ],
     },
@@ -241,7 +241,7 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
                           >
                             {mode.name}
                           </h3>
-                          <div className="flex items-center space-x-3 text-sm">
+                          <div className="flex items-center text-sm">
                             <span
                               className={`
                             px-3 py-1 rounded-full font-medium
@@ -256,10 +256,10 @@ const StudyModeSlider: React.FC<StudyModeSliderProps> = ({
                             >
                               {mode.difficulty}
                             </span>
-                            <span className="flex items-center space-x-1 text-gray-400">
+                            {/* <span className="flex items-center space-x-1 text-gray-400">
                               <Timer size={14} />
                               <span>{mode.time}</span>
-                            </span>
+                            </span> */}
                           </div>
                         </div>
                       </div>

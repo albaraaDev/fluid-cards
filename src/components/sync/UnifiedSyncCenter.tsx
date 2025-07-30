@@ -146,10 +146,10 @@ export default function UnifiedSyncCenter({
   const tabs = [
     {
       id: 'local' as TabType,
-      label: 'النسخ المحلية',
+      label: 'محلي',
       icon: HardDrive,
       color: 'blue',
-      description: 'ملفات على جهازك',
+      description: 'ملفات على الجهاز',
     },
     {
       id: 'cloud' as TabType,
@@ -167,16 +167,16 @@ export default function UnifiedSyncCenter({
   return (
     <>
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-        <div className="bg-gray-800 rounded-3xl p-6 lg:p-8 max-w-4xl w-full max-h-[90vh] overflow-hidden border border-gray-700 shadow-2xl">
+        <div className="bg-gray-800 rounded-3xl p-4 lg:p-8 max-w-4xl w-full max-h-[90vh] overflow-hidden border border-gray-700 shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shrink-0">
                 <Save size={24} className="text-white" />
               </div>
               <div>
                 <h3 className="text-xl lg:text-2xl font-bold text-white">
-                  مركز المزامنة والنسخ الاحتياطي
+                  مركز المزامنة
                 </h3>
                 <p className="text-sm text-gray-400">
                   إدارة بياناتك محلياً وعلى السحابة
@@ -187,7 +187,7 @@ export default function UnifiedSyncCenter({
             <div className="flex items-center space-x-2">
               {/* User Info & Sign Out */}
               {user && (
-                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-700/50 rounded-xl border border-gray-600/50">
+                <div className="flex items-center space-x-2 px-3 py-2 bg-gray-700/50 rounded-xl border border-gray-600/50 max-sm:hidden">
                   <User size={16} className="text-gray-400" />
                   <span className="text-sm text-gray-300 hidden sm:inline">
                     {user.email.split('@')[0]}
@@ -222,7 +222,7 @@ export default function UnifiedSyncCenter({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    flex-1 flex items-center justify-center space-x-3 py-3 px-4 rounded-xl transition-all duration-200
+                    flex-1 flex max-sm:flex-col text-center items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-200
                     ${
                       isActive
                         ? 'bg-gray-600 text-white shadow-lg'
@@ -244,7 +244,7 @@ export default function UnifiedSyncCenter({
                         : 'text-gray-400'
                     }
                   />
-                  <div className="text-right">
+                  <div className="text-right max-sm:hidden">
                     <div className="font-medium">{tab.label}</div>
                     <div className="text-xs opacity-75">{tab.description}</div>
                   </div>
@@ -309,7 +309,7 @@ export default function UnifiedSyncCenter({
                     <label
                       htmlFor="local-import-file"
                       className={`
-                      inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all cursor-pointer
+                      inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all cursor-pointer max-sm:w-full justify-center
                       ${
                         actionLoading === 'file-import'
                           ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
