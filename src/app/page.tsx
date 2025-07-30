@@ -256,7 +256,7 @@ export default function HomePage() {
 
       {/* Random Words للمراجعة */}
       {randomUnmasteredWords.length > 0 && (
-        <div className="mb-8 lg:mb-12">
+        <div className="">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <Zap className="text-yellow-400" size={24} />
