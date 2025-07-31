@@ -1,4 +1,4 @@
-// src/components/tests/MatchingTest.tsx - النسخة المكتملة
+// src/components/tests/MatchingTest.tsx - النسخة المحسنة
 'use client';
 
 import { TestQuestion } from '@/types/flashcard';
@@ -8,6 +8,8 @@ import {
   Eye,
   Link,
   RotateCcw,
+  Shuffle,
+  Target,
   XCircle,
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,11 +24,11 @@ interface MatchingTestProps {
   isCompleted?: boolean;
 }
 
-interface DragState {
-  isDragging: boolean;
-  draggedItem: string | null;
-  dragType: 'word' | 'meaning' | null;
-  draggedFromIndex: number | null;
+interface MatchPair {
+  word: string;
+  meaning: string;
+  isMatched: boolean;
+  isCorrect?: boolean;
 }
 
 export default function MatchingTest({
@@ -36,381 +38,456 @@ export default function MatchingTest({
   showResult = false,
   correctAnswer,
   userAnswer,
-  isCompleted = false,
+  isCompleted = false
 }: MatchingTestProps) {
-  // Parse question data
-  const questionData = JSON.parse(question.question);
-  const words = questionData.words as string[];
-  const meanings = questionData.meanings as string[];
-
-  // Parse correct and user answers
-  const correctMatches = JSON.parse(correctAnswer || '{}') as Record<string, string>;
-  const userMatches = JSON.parse(userAnswer || '{}') as Record<string, string>;
-
-  // State
-  const [matches, setMatches] = useState<Record<string, string>>(userMatches);
-  const [dragState, setDragState] = useState<DragState>({
-    isDragging: false,
-    draggedItem: null,
-    dragType: null,
-    draggedFromIndex: null,
-  });
-  const [hasAnimated, setHasAnimated] = useState(false);
+  
+  // ==========================================
+  // State Management
+  // ==========================================
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [selectedMeaning, setSelectedMeaning] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Record<string, string>>({});
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  
+  // Animation timer ref
+  const animationTimer = useRef<number | null>(null);
+  
+  // ==========================================
+  // Data Processing - 🔥 إصلاح مشكلة JSON
+  // ==========================================
+  const { words, meanings, correctMatches } = React.useMemo(() => {
+    // 🔥 استخدام matchingData الجديدة بدلاً من JSON.parse
+    if (question.matchingData) {
+      return {
+        words: question.matchingData.words,
+        meanings: question.matchingData.meanings,
+        correctMatches: question.matchingData.correctMatches,
+      };
+    }
+    
+    // Fallback للكود القديم (مؤقت)
+    try {
+      const correctMatches = JSON.parse(question.correctAnswer);
+      const words = Object.keys(correctMatches);
+      const meanings = Object.values(correctMatches) as string[];
+      
+      return {
+        words,
+        meanings: [...meanings].sort(() => Math.random() - 0.5), // خلط المعاني
+        correctMatches,
+      };
+    } catch (error) {
+      console.error('❌ خطأ في تحليل بيانات المطابقة:', error);
+      
+      // بيانات افتراضية لمنع التعطل
+      return {
+        words: ['كلمة مؤقتة'],
+        meanings: ['معنى مؤقت'],
+        correctMatches: { 'كلمة مؤقتة': 'معنى مؤقت' },
+      };
+    }
+  }, [question]);
 
-  // Reset animation when question changes
+  // ==========================================
+  // Effects
+  // ==========================================
+  
+  // Reset animation on question change
   useEffect(() => {
     setHasAnimated(false);
-    setMatches(userMatches);
     setSelectedWord(null);
+    setSelectedMeaning(null);
+    setMatches({});
     
-    const timer = setTimeout(() => setHasAnimated(true), 100);
-    return () => clearTimeout(timer);
+    // Load previous matches if available
+    if (userAnswer) {
+      try {
+        const previousMatches = JSON.parse(userAnswer);
+        setMatches(previousMatches);
+      } catch (error) {
+        console.error('Error loading previous matches:', error);
+      }
+    }
+    
+    if (animationTimer.current) {
+      clearTimeout(animationTimer.current);
+    }
+    
+    animationTimer.current = window.setTimeout(() => {
+      setHasAnimated(true);
+    }, 100);
+
+    return () => {
+      if (animationTimer.current) {
+        clearTimeout(animationTimer.current);
+      }
+    };
   }, [question.id, userAnswer]);
 
-  // Calculate stats
-  const matchedCount = Object.keys(matches).length;
-  const totalPairs = words.length;
-  const allMatched = matchedCount === totalPairs;
-
-  // Check if all matches are correct
-  const allCorrect = showResult && Object.keys(correctMatches).every(
-    word => matches[word] === correctMatches[word]
-  );
-
-  // Handle mobile tap selection
-  const handleWordSelection = (word: string) => {
+  // ==========================================
+  // Event Handlers
+  // ==========================================
+  
+  const handleWordClick = useCallback((word: string) => {
     if (isCompleted || showResult) return;
     
-    if (selectedWord === word) {
+    // إذا كانت الكلمة مطابقة بالفعل، إلغاء المطابقة
+    if (matches[word]) {
+      const newMatches = { ...matches };
+      delete newMatches[word];
+      setMatches(newMatches);
       setSelectedWord(null);
-    } else if (selectedWord) {
-      // Create match between selectedWord and word
-      if (words.includes(selectedWord) && meanings.includes(word)) {
-        setMatches(prev => ({ ...prev, [selectedWord]: word }));
-      } else if (meanings.includes(selectedWord) && words.includes(word)) {
-        setMatches(prev => ({ ...prev, [word]: selectedWord }));
-      }
-      setSelectedWord(null);
-    } else {
-      setSelectedWord(word);
-    }
-  };
-
-  // Handle drag operations
-  const handleDragStart = (item: string, type: 'word' | 'meaning', index: number) => {
-    if (isCompleted || showResult) return;
-    
-    setDragState({
-      isDragging: true,
-      draggedItem: item,
-      dragType: type,
-      draggedFromIndex: index,
-    });
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (item: string, type: 'word' | 'meaning', e?: React.DragEvent) => {
-    if (e) e.preventDefault();
-
-    if (!dragState.draggedItem || dragState.dragType === type || isCompleted || showResult) {
-      resetDragState();
       return;
     }
-
-    // Create match
-    if (dragState.dragType === 'word' && type === 'meaning') {
-      setMatches(prev => ({ ...prev, [dragState.draggedItem!]: item }));
-    } else if (dragState.dragType === 'meaning' && type === 'word') {
-      setMatches(prev => ({ ...prev, [item]: dragState.draggedItem! }));
+    
+    // إذا كان هناك معنى محدد، قم بالمطابقة
+    if (selectedMeaning) {
+      const newMatches = { ...matches, [word]: selectedMeaning };
+      setMatches(newMatches);
+      setSelectedWord(null);
+      setSelectedMeaning(null);
+      
+      // إذا اكتملت جميع المطابقات، أرسل الإجابة
+      if (Object.keys(newMatches).length === words.length) {
+        setTimeout(() => {
+          onAnswer(newMatches);
+        }, 300);
+      }
+    } else {
+      setSelectedWord(word);
+      setSelectedMeaning(null);
     }
+  }, [isCompleted, showResult, matches, selectedMeaning, words.length, onAnswer]);
 
-    resetDragState();
-  };
-
-  const resetDragState = () => {
-    setDragState({
-      isDragging: false,
-      draggedItem: null,
-      dragType: null,
-      draggedFromIndex: null,
-    });
-  };
-
-  // Remove match
-  const removeMatch = (word: string) => {
+  const handleMeaningClick = useCallback((meaning: string) => {
     if (isCompleted || showResult) return;
-    setMatches(prev => {
-      const newMatches = { ...prev };
-      delete newMatches[word];
-      return newMatches;
-    });
-  };
+    
+    // إذا كان المعنى مطابق بالفعل، إلغاء المطابقة
+    const matchedWord = Object.keys(matches).find(word => matches[word] === meaning);
+    if (matchedWord) {
+      const newMatches = { ...matches };
+      delete newMatches[matchedWord];
+      setMatches(newMatches);
+      setSelectedMeaning(null);
+      return;
+    }
+    
+    // إذا كان هناك كلمة محددة، قم بالمطابقة
+    if (selectedWord) {
+      const newMatches = { ...matches, [selectedWord]: meaning };
+      setMatches(newMatches);
+      setSelectedWord(null);
+      setSelectedMeaning(null);
+      
+      // إذا اكتملت جميع المطابقات، أرسل الإجابة
+      if (Object.keys(newMatches).length === words.length) {
+        setTimeout(() => {
+          onAnswer(newMatches);
+        }, 300);
+      }
+    } else {
+      setSelectedMeaning(meaning);
+      setSelectedWord(null);
+    }
+  }, [isCompleted, showResult, matches, selectedWord, words.length, onAnswer]);
 
-  // Reset all matches
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     if (isCompleted || showResult) return;
+    
     setMatches({});
     setSelectedWord(null);
+    setSelectedMeaning(null);
+  }, [isCompleted, showResult]);
+
+  const toggleHint = useCallback(() => {
+    setShowHint(prev => !prev);
+  }, []);
+
+  // ==========================================
+  // Helper Functions
+  // ==========================================
+  
+  const getWordStyling = (word: string) => {
+    const isMatched = matches[word];
+    const isSelected = selectedWord === word;
+    let isCorrect = false;
+    
+    if (showResult && isMatched) {
+      isCorrect = correctMatches[word] === matches[word];
+    }
+    
+    let classes = `
+      relative p-4 lg:p-5 rounded-xl lg:rounded-2xl border-2 transition-all duration-300 
+      font-semibold text-lg lg:text-xl text-right cursor-pointer transform hover:scale-105
+      ${hasAnimated ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}
+    `;
+    
+    if (showResult) {
+      if (isMatched) {
+        classes += isCorrect
+          ? ` bg-green-900/30 border-green-500/50 text-green-300`
+          : ` bg-red-900/30 border-red-500/50 text-red-300`;
+      } else {
+        classes += ` bg-gray-900/30 border-gray-600/50 text-gray-400`;
+      }
+    } else if (isMatched) {
+      classes += ` bg-blue-900/30 border-blue-500/50 text-blue-300`;
+    } else if (isSelected) {
+      classes += ` bg-purple-900/30 border-purple-500/50 text-purple-300 scale-105`;
+    } else {
+      classes += ` bg-gray-900/30 border-gray-600/50 text-white hover:bg-gray-800/40 hover:border-gray-500/60`;
+    }
+    
+    return classes;
   };
 
-  // Submit answers
-  const handleSubmit = () => {
-    if (matchedCount === 0 || isCompleted || showResult) return;
-    onAnswer(matches);
+  const getMeaningStyling = (meaning: string) => {
+    const matchedWord = Object.keys(matches).find(word => matches[word] === meaning);
+    const isMatched = !!matchedWord;
+    const isSelected = selectedMeaning === meaning;
+    let isCorrect = false;
+    
+    if (showResult && isMatched) {
+      isCorrect = correctMatches[matchedWord] === meaning;
+    }
+    
+    let classes = `
+      relative p-4 lg:p-5 rounded-xl lg:rounded-2xl border-2 transition-all duration-300 
+      font-semibold text-lg lg:text-xl text-right cursor-pointer transform hover:scale-105
+      ${hasAnimated ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}
+    `;
+    
+    if (showResult) {
+      if (isMatched) {
+        classes += isCorrect
+          ? ` bg-green-900/30 border-green-500/50 text-green-300`
+          : ` bg-red-900/30 border-red-500/50 text-red-300`;
+      } else {
+        classes += ` bg-gray-900/30 border-gray-600/50 text-gray-400`;
+      }
+    } else if (isMatched) {
+      classes += ` bg-blue-900/30 border-blue-500/50 text-blue-300`;
+    } else if (isSelected) {
+      classes += ` bg-purple-900/30 border-purple-500/50 text-purple-300 scale-105`;
+    } else {
+      classes += ` bg-gray-900/30 border-gray-600/50 text-white hover:bg-gray-800/40 hover:border-gray-500/60`;
+    }
+    
+    return classes;
   };
 
-  // Check if item is matched
-  const isWordMatched = (word: string) => matches.hasOwnProperty(word);
-  const isMeaningMatched = (meaning: string) => Object.values(matches).includes(meaning);
+  const getConnectionLine = (word: string) => {
+    const meaning = matches[word];
+    if (!meaning) return null;
+    
+    const isCorrect = showResult ? correctMatches[word] === meaning : true;
+    
+    return (
+      <div 
+        key={`line-${word}`}
+        className={`
+          absolute top-1/2 left-1/2 w-1 h-8 transform -translate-x-1/2 -translate-y-1/2 z-10
+          transition-all duration-500 rounded-full
+          ${isCorrect ? 'bg-gradient-to-b from-green-400 to-green-600' : 'bg-gradient-to-b from-red-400 to-red-600'}
+          ${hasAnimated ? 'scale-y-100' : 'scale-y-0'}
+        `}
+      />
+    );
+  };
 
+  // ==========================================
+  // Statistics
+  // ==========================================
+  const matchedCount = Object.keys(matches).length;
+  const totalCount = words.length;
+  const progress = totalCount > 0 ? (matchedCount / totalCount) * 100 : 0;
+  
+  let correctCount = 0;
+  if (showResult) {
+    correctCount = Object.keys(matches).filter(word => 
+      correctMatches[word] === matches[word]
+    ).length;
+  }
+
+  // ==========================================
+  // Render
+  // ==========================================
   return (
-    <div className={`w-full transition-all duration-700 ${hasAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+    <div className="w-full max-w-4xl mx-auto p-4 lg:p-6">
       
       {/* Header */}
-      <div className="text-center mb-8">
-        <h3 className="text-2xl lg:text-3xl font-bold text-white mb-3">
-          اربط الكلمات بمعانيها
-        </h3>
-        <p className="text-gray-400 text-lg">
-          اسحب الكلمات أو اضغط لربطها بمعانيها الصحيحة
-        </p>
-        <div className="mt-4 text-purple-400 font-semibold">
-          تم ربط {matchedCount} من {totalPairs}
+      <div className="mb-6 lg:mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl lg:text-3xl font-bold text-white">
+            🔗 اختبار المطابقة
+          </h2>
+          
+          <div className="flex items-center gap-4">
+            {timeLeft !== undefined && (
+              <div className="flex items-center gap-2 text-orange-300">
+                <Clock className="w-5 h-5" />
+                <span className="font-mono">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+              </div>
+            )}
+            
+            <button
+              onClick={toggleHint}
+              className="p-2 rounded-lg bg-blue-900/30 border border-blue-600/50 text-blue-300 hover:bg-blue-800/40 transition-colors"
+              title="عرض تلميح"
+            >
+              <Eye className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Progress Bar */}
+        <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+          <div 
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-semibold text-white">
+              {matchedCount}/{totalCount}
+            </span>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <p className="text-gray-300 text-center mt-4">
+          {isCompleted || showResult
+            ? showResult 
+              ? `أكملت ${correctCount} من ${totalCount} مطابقات صحيحة`
+              : 'مكتمل! في انتظار النتائج...'
+            : 'انقر على كلمة ثم انقر على معناها لربطهما معاً'
+          }
+        </p>
       </div>
 
-      {/* Matching Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      {/* Hint */}
+      {showHint && !showResult && (
+        <div className="mb-6 p-4 bg-blue-900/20 border border-blue-600/30 rounded-xl">
+          <p className="text-blue-300 text-sm">
+            💡 <strong>تلميح:</strong> ابدأ بالكلمات التي تعرفها جيداً، ثم انتقل للأصعب. 
+            يمكنك النقر على أي مطابقة لإلغائها وإعادة ترتيبها.
+          </p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Words Column */}
-        <div className="space-y-4">
-          <h4 className="text-xl font-bold text-white text-center mb-6 pb-3 border-b border-gray-700">
+        <div className="space-y-3">
+          <h3 className="text-xl font-bold text-center text-gray-300 mb-4 flex items-center justify-center gap-2">
+            <Target className="w-5 h-5" />
             الكلمات
-          </h4>
-          {words.map((word, index) => {
-            const isMatched = isWordMatched(word);
-            const isSelected = selectedWord === word;
-            const isCorrectMatch = showResult && matches[word] === correctMatches[word];
-            const isWrongMatch = showResult && matches[word] && matches[word] !== correctMatches[word];
-            
-            return (
-              <div
-                key={word}
-                draggable={!isCompleted && !showResult}
-                onDragStart={() => handleDragStart(word, 'word', index)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(word, 'word')}
-                onClick={() => handleWordSelection(word)}
-                className={`
-                  p-4 lg:p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 touch-manipulation select-none
-                  ${isSelected ? 'border-purple-500 bg-purple-900/30 scale-105' : 
-                    isMatched ? 
-                      showResult ? 
-                        isCorrectMatch ? 'border-green-500 bg-green-900/20' :
-                        isWrongMatch ? 'border-red-500 bg-red-900/20' :
-                        'border-gray-600 bg-gray-800/50'
-                      : 'border-purple-600 bg-purple-900/20'
-                    : 'border-gray-600 bg-gray-800/50 hover:border-purple-500 hover:bg-purple-900/10'
-                  }
-                  ${dragState.isDragging && dragState.draggedItem === word ? 'opacity-50' : ''}
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-semibold text-lg">{word}</span>
-                  <div className="flex items-center space-x-2">
-                    {isMatched && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeMatch(word);
-                        }}
-                        disabled={isCompleted || showResult}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <XCircle size={16} />
-                      </button>
+          </h3>
+          
+          {words.map((word, index) => (
+            <div
+              key={word}
+              className={getWordStyling(word)}
+              onClick={() => handleWordClick(word)}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <div className="flex items-center justify-between">
+                <span>{word}</span>
+                
+                {matches[word] && (
+                  <div className="flex items-center gap-2">
+                    <Link className="w-4 h-4 text-blue-400" />
+                    {showResult && (
+                      correctMatches[word] === matches[word] 
+                        ? <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        : <XCircle className="w-4 h-4 text-red-400" />
                     )}
-                    {showResult && isMatched && (
-                      isCorrectMatch ? (
-                        <CheckCircle2 className="text-green-400" size={20} />
-                      ) : (
-                        <XCircle className="text-red-400" size={20} />
-                      )
-                    )}
-                    {!showResult && isMatched && (
-                      <Link className="text-purple-400" size={20} />
-                    )}
-                  </div>
-                </div>
-                {isMatched && (
-                  <div className="mt-2 text-sm text-gray-400">
-                    مرتبطة بـ: <span className="text-purple-400">{matches[word]}</span>
                   </div>
                 )}
               </div>
-            );
-          })}
+              
+              {/* Connection indicator */}
+              {/* {matches[word] && getConnectionLine(word)} */}
+            </div>
+          ))}
         </div>
 
+        {/* Center Line */}
+        {/* <div className="hidden lg:flex items-center justify-center">
+          <div className="w-px h-full bg-gradient-to-b from-transparent via-gray-600 to-transparent"></div>
+        </div> */}
+
         {/* Meanings Column */}
-        <div className="space-y-4">
-          <h4 className="text-xl font-bold text-white text-center mb-6 pb-3 border-b border-gray-700">
+        <div className="space-y-3">
+          <h3 className="text-xl font-bold text-center text-gray-300 mb-4 flex items-center justify-center gap-2">
+            <Shuffle className="w-5 h-5" />
             المعاني
-          </h4>
-          {meanings.map((meaning, index) => {
-            const isMatched = isMeaningMatched(meaning);
-            const isSelected = selectedWord === meaning;
-            const matchedWord = Object.keys(matches).find(word => matches[word] === meaning);
-            const isCorrectMatch = showResult && matchedWord && correctMatches[matchedWord] === meaning;
-            const isWrongMatch = showResult && matchedWord && correctMatches[matchedWord] !== meaning;
-            
-            return (
-              <div
-                key={meaning}
-                draggable={!isCompleted && !showResult}
-                onDragStart={() => handleDragStart(meaning, 'meaning', index)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(meaning, 'meaning')}
-                onClick={() => handleWordSelection(meaning)}
-                className={`
-                  p-4 lg:p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 touch-manipulation select-none
-                  ${isSelected ? 'border-purple-500 bg-purple-900/30 scale-105' : 
-                    isMatched ? 
-                      showResult ? 
-                        isCorrectMatch ? 'border-green-500 bg-green-900/20' :
-                        isWrongMatch ? 'border-red-500 bg-red-900/20' :
-                        'border-gray-600 bg-gray-800/50'
-                      : 'border-purple-600 bg-purple-900/20'
-                    : 'border-gray-600 bg-gray-800/50 hover:border-purple-500 hover:bg-purple-900/10'
-                  }
-                  ${dragState.isDragging && dragState.draggedItem === meaning ? 'opacity-50' : ''}
-                `}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-medium">{meaning}</span>
-                  <div className="flex items-center space-x-2">
-                    {showResult && isMatched && (
-                      isCorrectMatch ? (
-                        <CheckCircle2 className="text-green-400" size={20} />
-                      ) : (
-                        <XCircle className="text-red-400" size={20} />
-                      )
-                    )}
-                    {!showResult && isMatched && (
-                      <Link className="text-purple-400" size={20} />
+          </h3>
+          
+          {meanings.map((meaning, index) => (
+            <div
+              key={meaning}
+              className={getMeaningStyling(meaning)}
+              onClick={() => handleMeaningClick(meaning)}
+              style={{ animationDelay: `${(index + words.length) * 100}ms` }}
+            >
+              <div className="flex items-center justify-between">
+                <span>{meaning}</span>
+                
+                {Object.values(matches).includes(meaning) && (
+                  <div className="flex items-center gap-2">
+                    <Link className="w-4 h-4 text-blue-400" />
+                    {showResult && (
+                      (() => {
+                        const matchedWord = Object.keys(matches).find(word => matches[word] === meaning);
+                        return matchedWord && correctMatches[matchedWord] === meaning
+                          ? <CheckCircle2 className="w-4 h-4 text-green-400" />
+                          : <XCircle className="w-4 h-4 text-red-400" />;
+                      })()
                     )}
                   </div>
-                </div>
+                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Action Buttons */}
-      {!showResult && (
-        <div className="flex items-center justify-center space-x-4 mt-8">
+      {/* Actions */}
+      {!isCompleted && !showResult && (
+        <div className="flex justify-center mt-8">
           <button
             onClick={handleReset}
             disabled={Object.keys(matches).length === 0}
-            className={`
-              flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all touch-manipulation
-              ${
-                Object.keys(matches).length > 0
-                  ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-              }
-            `}
+            className="flex items-center gap-2 px-6 py-3 bg-gray-900/50 border border-gray-600/50 text-gray-300 rounded-xl hover:bg-gray-800/60 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <RotateCcw size={18} />
-            <span>إعادة تعيين</span>
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={matchedCount === 0}
-            className={`
-              flex items-center space-x-3 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform touch-manipulation
-              ${
-                matchedCount > 0
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95'
-                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-              }
-            `}
-          >
-            <Eye size={20} />
-            <span>عرض النتائج</span>
+            <RotateCcw className="w-5 h-5" />
+            إعادة تعيين
           </button>
         </div>
       )}
 
-      {/* Result Summary */}
+      {/* Results Summary */}
       {showResult && (
-        <div className={`
-          mt-8 p-6 lg:p-8 rounded-2xl lg:rounded-3xl border-2 transition-all duration-700 delay-700
-          ${
-            allCorrect
-              ? 'bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-600/50'
-              : 'bg-gradient-to-br from-orange-900/20 to-orange-800/10 border-orange-600/50'
-          }
-        `}>
-          <div className="flex items-center space-x-4 mb-4">
-            {allCorrect ? (
-              <>
-                <div className="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center">
-                  <CheckCircle2 size={24} className="text-white" />
-                </div>
-                <div>
-                  <h4 className="text-green-400 font-bold text-xl">مطابقة مثالية!</h4>
-                  <p className="text-gray-400">جميع الربط صحيح</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center">
-                  <XCircle size={24} className="text-white" />
-                </div>
-                <div>
-                  <h4 className="text-orange-400 font-bold text-xl">يحتاج تحسين</h4>
-                  <p className="text-gray-400">بعض الربط غير صحيح</p>
-                </div>
-              </>
-            )}
-          </div>
-          
+        <div className="mt-8 p-6 bg-gray-900/50 border border-gray-600/30 rounded-xl">
           <div className="text-center">
-            <div className="text-2xl font-bold text-white mb-2">
-              {Object.keys(correctMatches).filter(word => matches[word] === correctMatches[word]).length} / {Object.keys(correctMatches).length}
+            <div className="text-3xl font-bold mb-2">
+              {correctCount === totalCount ? '🎉' : correctCount >= totalCount * 0.7 ? '👍' : '💪'}
             </div>
-            <div className="text-gray-400">ربط صحيح</div>
-          </div>
-        </div>
-      )}
-
-      {/* Timer Progress */}
-      {timeLeft !== undefined && timeLeft > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-400 text-sm flex items-center space-x-1">
-              <Clock size={16} />
-              <span>الوقت المتبقي</span>
-            </span>
-            <span className="text-white font-bold">{timeLeft}ث</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full transition-all ${
-                timeLeft <= 10 ? 'bg-red-500' : timeLeft <= 30 ? 'bg-yellow-500' : 'bg-purple-500'
-              }`}
-              style={{
-                width: `${(timeLeft / (question.timeSpent || 60)) * 100}%`,
-                transition: 'width 1s linear',
-              }}
-            />
+            
+            <h3 className="text-xl font-bold text-white mb-2">
+              النتيجة: {correctCount}/{totalCount}
+            </h3>
+            
+            <p className="text-gray-300">
+              {correctCount === totalCount 
+                ? 'ممتاز! جميع المطابقات صحيحة!'
+                : correctCount >= totalCount * 0.7
+                ? 'جيد جداً! استمر في التدريب'
+                : 'تحتاج إلى مزيد من المراجعة'
+              }
+            </p>
           </div>
         </div>
       )}

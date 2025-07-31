@@ -1,4 +1,4 @@
-// src/types/flashcard.ts
+// src/types/flashcard.ts - النسخة المحسنة
 
 export interface Word {
   id: number;
@@ -121,7 +121,7 @@ export interface StudyFilters {
 }
 
 // ==========================================
-// نظام الاختبارات المتقدم - Types جديدة
+// نظام الاختبارات المتقدم - Types محسنة
 // ==========================================
 
 // أنواع الاختبارات المختلفة
@@ -132,18 +132,27 @@ export type TestType =
   | 'true_false'         // صح/خطأ
   | 'mixed';             // خليط
 
-// سؤال واحد في الاختبار
+// 🔥 إصلاح: بيانات المطابقة المنظمة
+export interface MatchingData {
+  words: string[];
+  meanings: string[];
+  correctMatches: Record<string, string>;
+}
+
+// سؤال واحد في الاختبار - محسن
 export interface TestQuestion {
   id: string;
   wordId: number;
   type: TestType;
   question: string;
   correctAnswer: string;
-  options?: string[];     // للاختيار المتعدد
+  options?: string[];         // للاختيار المتعدد
+  matchingData?: MatchingData; // 🔥 جديد: للمطابقة
   userAnswer?: string;
-  timeSpent?: number;     // بالثواني
+  timeSpent?: number;         // بالثواني
   isCorrect?: boolean;
-  difficulty?: number;    // 1-5
+  difficulty?: number;        // 1-5
+  hints?: string[];          // تلميحات إضافية
 }
 
 // إعدادات الاختبار
@@ -158,9 +167,13 @@ export interface TestSettings {
   showCorrectAnswer: boolean;
   instantFeedback: boolean;
   allowSkip: boolean;
+  // 🔥 جديد: خيارات متقدمة
+  balanceDifficulty?: boolean;  // توازن مستويات الصعوبة
+  prioritizeWeak?: boolean;     // أولوية للكلمات الضعيفة
+  includeNotes?: boolean;       // تضمين الملاحظات
 }
 
-// نتائج الاختبار المفصلة
+// نتائج الاختبار المفصلة - محسنة
 export interface TestResults {
   id: string;
   testId: string;
@@ -177,9 +190,16 @@ export interface TestResults {
   averageTimePerQuestion: number;
   questionsData: TestQuestion[];
   breakdown: {              // تفصيل الأداء
-    byCategory: Record<string, { correct: number; total: number }>;
-    byDifficulty: Record<string, { correct: number; total: number }>;
-    byType: Record<TestType, { correct: number; total: number }>;
+    byCategory: Record<string, { correct: number; total: number; percentage: number }>;
+    byDifficulty: Record<string, { correct: number; total: number; percentage: number }>;
+    byType: Record<TestType, { correct: number; total: number; percentage: number }>;
+  };
+  // 🔥 جديد: تحليل أعمق
+  performance: {
+    fastestTime: number;
+    slowestTime: number;
+    consistency: number;      // مدى ثبات الأداء (0-1)
+    improvement: number;      // تحسن مقارنة بالاختبارات السابقة
   };
 }
 
@@ -194,6 +214,10 @@ export interface Test {
   createdAt: number;
   completedAt?: number;
   isActive: boolean;
+  // 🔥 جديد: معلومات إضافية
+  attempts?: number;        // عدد المحاولات
+  bestScore?: number;       // أفضل نتيجة
+  tags?: string[];          // علامات تصنيف
 }
 
 // Error Types
@@ -273,3 +297,28 @@ export type Timestamp = number;
 export type UUID = string;
 export type ColorHex = string;
 export type IconName = string;
+
+// 🔥 جديد: أنواع مساعدة للاختبارات
+export interface QuestionValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface TestValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  suggestedFixes: string[];
+}
+
+// Timer Types - إصلاح مشكلة NodeJS.Timeout
+export type TimerRef = number | null;
+
+// Test Generation Options
+export interface TestGenerationOptions {
+  avoidRecentWords?: boolean;    // تجنب الكلمات المراجعة مؤخراً
+  balanceCategories?: boolean;   // توازن الفئات
+  includeDifficultWords?: boolean; // تضمين الكلمات الصعبة
+  maxRepetitionPerWord?: number; // حد أقصى لتكرار الكلمة الواحدة
+}

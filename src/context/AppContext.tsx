@@ -1,4 +1,4 @@
-// src/context/AppContext.tsx - النسخة الكاملة والأخيرة
+// src/context/AppContext.tsx - النسخة المحسنة والمطورة
 'use client';
 
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -6,12 +6,15 @@ import {
   AppData,
   AppStats,
   DifficultyFilter,
+  MatchingData,
   StudySession,
   Test,
   TestQuestion,
   TestResults,
   TestSettings,
   TestType,
+  TestValidation,
+  TimerRef,
   Word,
 } from '@/types/flashcard';
 import {
@@ -124,8 +127,9 @@ interface AppContextType {
   exportData: () => void;
   importData: (data: any) => Promise<boolean>;
 
-  // Test Management
+  // Test Management - محسن
   createTest: (settings: TestSettings) => Test;
+  validateTest: (settings: TestSettings) => TestValidation;
   startTest: (testId: string) => void;
   submitTestResults: (testId: string, results: TestResults) => void;
   getTestHistory: () => Test[];
@@ -142,20 +146,58 @@ interface AppContextType {
 }
 
 // ==========================================
-// SM-2 Algorithm Implementation
+// Enhanced SM-2 Algorithm Implementation
 // ==========================================
-const calculateSM2 = (
+const calculateSM2Enhanced = (
   word: Word,
-  quality: number
+  quality: number,
+  questionType?: TestType,
+  timeSpent?: number
 ): { interval: number; repetition: number; easeFactor: number } => {
   let { interval, repetition, easeFactor } = word;
 
-  // إذا كانت الإجابة صعبة (quality < 3)، إعادة البداية
-  if (quality < 3) {
+  // تعديل الجودة حسب نوع السؤال
+  let adjustedQuality = quality;
+  
+  if (questionType) {
+    switch (questionType) {
+      case 'multiple_choice':
+        // اختيار متعدد أسهل - تقليل المكافأة قليلاً
+        adjustedQuality = Math.max(0, quality - 0.3);
+        break;
+      case 'typing':
+        // الكتابة أصعب - زيادة المكافأة
+        adjustedQuality = Math.min(5, quality + 0.5);
+        break;
+      case 'matching':
+        // المطابقة متوسطة
+        adjustedQuality = quality;
+        break;
+      case 'true_false':
+        // صح/خطأ أسهل
+        adjustedQuality = Math.max(0, quality - 0.2);
+        break;
+    }
+  }
+
+  // تعديل الجودة حسب وقت الإجابة
+  if (timeSpent && timeSpent > 0) {
+    const expectedTime = 30; // وقت متوقع بالثواني
+    const timeRatio = timeSpent / expectedTime;
+    
+    if (quality >= 3) { // إجابة صحيحة
+      if (timeRatio <= 0.3) adjustedQuality += 0.5; // سريع جداً
+      else if (timeRatio >= 1.5) adjustedQuality -= 0.3; // بطيء
+    }
+  }
+
+  // تطبيق خوارزمية SM-2 المحسنة
+  if (adjustedQuality < 3) {
+    // إجابة صعبة - إعادة البداية
     repetition = 0;
     interval = 1;
   } else {
-    // الإجابة صحيحة، تقدم في التكرار
+    // إجابة صحيحة - تقدم في التكرار
     repetition += 1;
 
     if (repetition === 1) {
@@ -166,9 +208,9 @@ const calculateSM2 = (
       interval = Math.ceil(interval * easeFactor);
     }
 
-    // تحديث easeFactor فقط للإجابات الصحيحة
+    // تحديث easeFactor
     easeFactor =
-      easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      easeFactor + (0.1 - (5 - adjustedQuality) * (0.08 + (5 - adjustedQuality) * 0.02));
     easeFactor = Math.max(easeFactor, 1.3);
   }
 
@@ -179,265 +221,355 @@ const calculateSM2 = (
 };
 
 // ==========================================
+// Question Generation Utils - محسن
+// ==========================================
+class EnhancedQuestionGenerator {
+  // 🔥 إنشاء أسئلة متعددة الخيارات محسن
+  static generateMultipleChoice(word: Word, allWords: Word[]): TestQuestion {
+    const isWordToMeaning = Math.random() > 0.5;
+    
+    const question = isWordToMeaning 
+      ? `ما معنى كلمة "${word.word}"؟`
+      : `ما الكلمة التي تعني "${word.meaning}"؟`;
+    
+    const correctAnswer = isWordToMeaning ? word.meaning : word.word;
+    
+    // 🔥 تحسين: اختيار خيارات خاطئة ذكية
+    const wrongAnswers = this.getSmartWrongAnswers(word, allWords, 3, isWordToMeaning);
+    const options = this.shuffleArray([correctAnswer, ...wrongAnswers]);
+    
+    return {
+      id: `mcq_${word.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      wordId: word.id,
+      type: 'multiple_choice',
+      question,
+      correctAnswer,
+      options,
+      difficulty: this.getDifficultyNumber(word.difficulty),
+    };
+  }
+
+  // 🔥 إنشاء أسئلة كتابة
+  static generateTypingQuestion(word: Word): TestQuestion {
+    const isWordToMeaning = Math.random() > 0.5;
+    
+    const question = isWordToMeaning
+      ? `اكتب معنى كلمة "${word.word}"`
+      : `اكتب الكلمة التي تعني "${word.meaning}"`;
+    
+    const correctAnswer = isWordToMeaning ? word.meaning : word.word;
+    
+    return {
+      id: `typing_${word.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      wordId: word.id,
+      type: 'typing',
+      question,
+      correctAnswer,
+      difficulty: this.getDifficultyNumber(word.difficulty),
+    };
+  }
+
+  // 🔥 إنشاء أسئلة مطابقة محسن - يحل مشكلة JSON
+  static generateMatchingQuestion(words: Word[]): TestQuestion {
+    const selectedWords = words.slice(0, Math.min(6, words.length));
+    
+    const wordsList = selectedWords.map(w => w.word);
+    const meaningsList = selectedWords.map(w => w.meaning);
+    const shuffledMeanings = this.shuffleArray([...meaningsList]);
+    
+    // 🔥 إصلاح: استخدام matchingData بدلاً من JSON في question
+    const correctMatches = selectedWords.reduce((acc, word) => {
+      acc[word.word] = word.meaning;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const matchingData: MatchingData = {
+      words: wordsList,
+      meanings: shuffledMeanings,
+      correctMatches,
+    };
+    
+    return {
+      id: `matching_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      wordId: selectedWords[0].id,
+      type: 'matching',
+      question: `اربط كل كلمة بمعناها الصحيح`,
+      correctAnswer: JSON.stringify(correctMatches),
+      matchingData, // 🔥 البيانات المنظمة
+      difficulty: Math.round(
+        selectedWords.reduce((sum, w) => sum + this.getDifficultyNumber(w.difficulty), 0) / selectedWords.length
+      ),
+    };
+  }
+
+  // 🔥 إنشاء أسئلة صح/خطأ
+  static generateTrueFalseQuestion(word: Word, allWords: Word[]): TestQuestion {
+    const isCorrect = Math.random() > 0.5;
+    
+    let statement: string;
+    let correctAnswer: string;
+    
+    if (isCorrect) {
+      statement = `كلمة "${word.word}" تعني "${word.meaning}"`;
+      correctAnswer = 'true';
+    } else {
+      const wrongMeaning = this.generateFalseStatement(word, allWords);
+      statement = `كلمة "${word.word}" تعني "${wrongMeaning}"`;
+      correctAnswer = 'false';
+    }
+    
+    return {
+      id: `tf_${word.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      wordId: word.id,
+      type: 'true_false',
+      question: statement,
+      correctAnswer,
+      difficulty: this.getDifficultyNumber(word.difficulty),
+    };
+  }
+
+  // 🔥 اختيار خيارات خاطئة ذكية
+  private static getSmartWrongAnswers(
+    correctWord: Word,
+    allWords: Word[],
+    count: number,
+    isWordToMeaning: boolean
+  ): string[] {
+    const availableWords = allWords.filter(w => w.id !== correctWord.id);
+    
+    // أولوية للكلمات من نفس الفئة والصعوبة
+    const sameCategory = availableWords.filter(w => w.category === correctWord.category);
+    const sameDifficulty = availableWords.filter(w => w.difficulty === correctWord.difficulty);
+    const similarLength = availableWords.filter(w => 
+      Math.abs(w.word.length - correctWord.word.length) <= 2
+    );
+    
+    let candidatePool: Word[] = [];
+    
+    // بناء pool ذكي
+    if (sameCategory.length >= count) {
+      candidatePool = sameCategory;
+    } else if (sameDifficulty.length >= count) {
+      candidatePool = sameDifficulty;
+    } else if (similarLength.length >= count) {
+      candidatePool = similarLength;
+    } else {
+      candidatePool = availableWords;
+    }
+    
+    if (candidatePool.length === 0) {
+      return ['خيار بديل 1', 'خيار بديل 2', 'خيار بديل 3'].slice(0, count);
+    }
+    
+    const shuffled = this.shuffleArray([...candidatePool]);
+    const selectedWords = shuffled.slice(0, count);
+    
+    return selectedWords.map(w => isWordToMeaning ? w.meaning : w.word);
+  }
+
+  // دوال مساعدة
+  private static shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  private static getDifficultyNumber(difficulty: string): number {
+    switch (difficulty) {
+      case 'سهل': return 1;
+      case 'متوسط': return 3;
+      case 'صعب': return 5;
+      default: return 3;
+    }
+  }
+
+  private static generateFalseStatement(word: Word, allWords: Word[]): string {
+    const sameCategory = allWords.filter(w => 
+      w.id !== word.id && w.category === word.category
+    );
+    
+    const candidateWords = sameCategory.length > 0 ? sameCategory : 
+      allWords.filter(w => w.id !== word.id);
+    
+    if (candidateWords.length === 0) {
+      return 'معنى غير صحيح';
+    }
+    
+    const randomWord = candidateWords[Math.floor(Math.random() * candidateWords.length)];
+    return randomWord.meaning;
+  }
+}
+
+// ==========================================
 // Context Creation
 // ==========================================
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // ==========================================
-// Provider Component
+// App Provider Component
 // ==========================================
-interface AppProviderProps {
-  children: ReactNode;
-}
-
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [words, setWords] = useLocalStorage<Word[]>(
-    'flashcard_words',
-    DEFAULT_WORDS
-  );
-  const [categories, setCategories] = useLocalStorage<string[]>(
-    'flashcard_categories',
-    DEFAULT_CATEGORIES
-  );
-  const [tests, setTests] = useLocalStorage<Test[]>('flashcard_tests', []);
+export const AppProvider = ({ children }: { children: ReactNode }) => {
+  // ==========================================
+  // State Management
+  // ==========================================
+  const [words, setWords] = useLocalStorage<Word[]>('flashcards-words', DEFAULT_WORDS);
+  const [categories, setCategories] = useLocalStorage<string[]>('flashcards-categories', DEFAULT_CATEGORIES);
+  const [tests, setTests] = useLocalStorage<Test[]>('flashcards-tests', []);
   const [isClient, setIsClient] = useState(false);
 
-  // التأكد من client-side rendering
+  // ==========================================
+  // Client-side Mounting
+  // ==========================================
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // ⚡ Memoized timestamp function
+  // ==========================================
+  // Helper Functions
+  // ==========================================
   const getCurrentTimestamp = useCallback(() => Date.now(), []);
 
-  // ⚡ Memoized إحصائيات محسوبة
-  const stats = useMemo(() => {
-    if (!isClient) {
-      // Return default stats for server-side rendering
+  const getNextWordId = useCallback(() => {
+    return Math.max(0, ...words.map(w => w.id)) + 1;
+  }, [words]);
+
+  // ==========================================
+  // Statistics Calculation - محسن
+  // ==========================================
+  const stats = useMemo((): AppStats => {
+    if (!isClient || words.length === 0) {
       return {
         totalWords: 0,
         masteredWords: 0,
         wordsNeedingReview: 0,
         progress: 0,
-        totalReviews: 0,
-        averageCorrectRate: 0,
-        streak: { current: 0, longest: 0 },
-        categoryStats: [],
-        difficultyStats: [],
       };
     }
 
-    const currentTime = getCurrentTimestamp();
-    const totalWords = words.length;
-
-    const masteredWords = words.filter(
-      (w) => w.repetition >= 3 && w.interval >= 21
-    ).length;
-
-    const wordsNeedingReview = words.filter(
-      (w) => w.nextReview <= currentTime
-    ).length;
-
-    const progress =
-      totalWords > 0 ? Math.round((masteredWords / totalWords) * 100) : 0;
-
-    const totalReviews = words.reduce(
-      (sum, w) => sum + w.correctCount + w.incorrectCount,
-      0
-    );
-
-    const totalCorrect = words.reduce((sum, w) => sum + w.correctCount, 0);
-
-    const averageCorrectRate =
-      totalReviews > 0 ? Math.round((totalCorrect / totalReviews) * 100) : 0;
-
-    // إحصائيات التصنيفات
-    const categoryMap = new Map<
-      string,
-      { total: number; mastered: number; needReview: number }
-    >();
-    words.forEach((word) => {
-      const category = word.category;
-      const current = categoryMap.get(category) || {
-        total: 0,
-        mastered: 0,
-        needReview: 0,
+    const now = getCurrentTimestamp();
+    const masteredWords = words.filter(w => w.repetition >= 3 && w.interval >= 21);
+    const wordsNeedingReview = words.filter(w => w.nextReview <= now);
+    
+    // إحصائيات متقدمة
+    const categoryStats = categories.map(category => {
+      const categoryWords = words.filter(w => w.category === category);
+      const mastered = categoryWords.filter(w => w.repetition >= 3 && w.interval >= 21);
+      const needReview = categoryWords.filter(w => w.nextReview <= now);
+      
+      return {
+        name: category,
+        total: categoryWords.length,
+        mastered: mastered.length,
+        needReview: needReview.length,
+        progress: categoryWords.length > 0 ? Math.round((mastered.length / categoryWords.length) * 100) : 0,
       };
-      current.total++;
-      if (word.repetition >= 3 && word.interval >= 21) current.mastered++;
-      if (word.nextReview <= currentTime) current.needReview++;
-      categoryMap.set(category, current);
     });
 
-    const categoryStats = Array.from(categoryMap.entries()).map(
-      ([name, data]) => ({
-        name,
-        ...data,
-        progress:
-          data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0,
-      })
-    );
-
-    // إحصائيات الصعوبة
-    const difficultyMap = new Map<
-      'سهل' | 'متوسط' | 'صعب',
-      { total: number; mastered: number }
-    >();
-    words.forEach((word) => {
-      const difficulty = word.difficulty;
-      const current = difficultyMap.get(difficulty) || {
-        total: 0,
-        mastered: 0,
+    const difficultyStats = (['سهل', 'متوسط', 'صعب'] as const).map(difficulty => {
+      const difficultyWords = words.filter(w => w.difficulty === difficulty);
+      const mastered = difficultyWords.filter(w => w.repetition >= 3 && w.interval >= 21);
+      
+      return {
+        name: difficulty,
+        total: difficultyWords.length,
+        mastered: mastered.length,
+        progress: difficultyWords.length > 0 ? Math.round((mastered.length / difficultyWords.length) * 100) : 0,
       };
-      current.total++;
-      if (word.repetition >= 3 && word.interval >= 21) current.mastered++;
-      difficultyMap.set(difficulty, current);
     });
-
-    const difficultyStats = Array.from(difficultyMap.entries()).map(
-      ([name, data]) => ({
-        name,
-        ...data,
-        progress:
-          data.total > 0 ? Math.round((data.mastered / data.total) * 100) : 0,
-        averageReviews: data.total > 0 ? totalReviews / data.total : 0,
-      })
-    );
 
     return {
-      totalWords,
-      masteredWords,
-      wordsNeedingReview,
-      progress,
-      totalReviews,
-      averageCorrectRate,
-      streak: { current: 0, longest: 0 }, // يمكن تطويرها لاحقاً
+      totalWords: words.length,
+      masteredWords: masteredWords.length,
+      wordsNeedingReview: wordsNeedingReview.length,
+      progress: Math.round((masteredWords.length / words.length) * 100),
       categoryStats,
       difficultyStats,
     };
-  }, [words, getCurrentTimestamp, isClient]);
+  }, [words, categories, isClient, getCurrentTimestamp]);
 
   // ==========================================
-  // Word Management Functions
+  // Word Management - بدون تغيير
   // ==========================================
+  const addWord = useCallback((
+    wordData: Omit<Word, 'id' | 'lastReviewed' | 'correctCount' | 'incorrectCount' | 'nextReview' | 'easeFactor' | 'interval' | 'repetition'>
+  ) => {
+    if (!isClient) return;
 
-  // ⚡ إضافة كلمة جديدة
-  const addWord = useCallback(
-    (
-      newWord: Omit<
-        Word,
-        | 'id'
-        | 'lastReviewed'
-        | 'correctCount'
-        | 'incorrectCount'
-        | 'nextReview'
-        | 'easeFactor'
-        | 'interval'
-        | 'repetition'
-      >
-    ) => {
-      if (!isClient) return;
+    const newWord: Word = {
+      ...wordData,
+      id: getNextWordId(),
+      lastReviewed: getCurrentTimestamp(),
+      correctCount: 0,
+      incorrectCount: 0,
+      nextReview: getCurrentTimestamp(),
+      easeFactor: 2.5,
+      interval: 1,
+      repetition: 0,
+    };
 
-      const currentTime = getCurrentTimestamp();
-      const id = Math.max(0, ...words.map((w) => w.id)) + 1;
+    setWords(prevWords => [...prevWords, newWord]);
 
-      const word: Word = {
-        ...newWord,
-        id,
-        lastReviewed: currentTime,
-        correctCount: 0,
-        incorrectCount: 0,
-        nextReview: currentTime, // متاحة للمراجعة فوراً
-        easeFactor: 2.5, // القيمة الافتراضية لـ SM-2
-        interval: 1,
-        repetition: 0,
-      };
+    if (!categories.includes(wordData.category)) {
+      setCategories(prev => [...prev, wordData.category]);
+    }
+  }, [isClient, getNextWordId, getCurrentTimestamp, setWords, categories, setCategories]);
 
-      setWords((prevWords) => [...prevWords, word]);
+  const updateWord = useCallback((id: number, updates: Partial<Word>) => {
+    if (!isClient) return;
 
-      // إضافة التصنيف إذا لم يكن موجوداً
-      if (!categories.includes(newWord.category)) {
-        setCategories((prevCategories) => [
-          ...prevCategories,
-          newWord.category,
-        ]);
-      }
-    },
-    [words, categories, setWords, setCategories, getCurrentTimestamp, isClient]
-  );
+    setWords(prevWords =>
+      prevWords.map(word =>
+        word.id === id ? { ...word, ...updates } : word
+      )
+    );
+  }, [isClient, setWords]);
 
-  // ⚡ تحديث كلمة
-  const updateWord = useCallback(
-    (id: number, updates: Partial<Word>) => {
-      if (!isClient) return;
-
-      setWords((prevWords) =>
-        prevWords.map((word) =>
-          word.id === id ? { ...word, ...updates } : word
-        )
-      );
-    },
-    [setWords, isClient]
-  );
-
-  // ⚡ حذف كلمة
-  const deleteWord = useCallback(
-    (id: number) => {
-      if (!isClient) return;
-
-      setWords((prevWords) => prevWords.filter((word) => word.id !== id));
-    },
-    [setWords, isClient]
-  );
+  const deleteWord = useCallback((id: number) => {
+    if (!isClient) return;
+    setWords(prevWords => prevWords.filter(word => word.id !== id));
+  }, [isClient, setWords]);
 
   // ==========================================
-  // Progress Tracking (SM-2 Algorithm)
+  // Progress Tracking - محسن
   // ==========================================
+  const updateProgress = useCallback((wordId: number, correct: boolean) => {
+    if (!isClient) return;
 
-  // ⚡ تحديث التقدم مع تقييم الجودة (0-5)
-  const updateProgressWithQuality = useCallback(
-    (wordId: number, quality: number) => {
-      if (!isClient) return;
+    const quality = correct ? 4 : 2;
+    updateProgressWithQuality(wordId, quality);
+  }, [isClient]);
 
-      const currentTime = getCurrentTimestamp();
+  const updateProgressWithQuality = useCallback((wordId: number, quality: number) => {
+    if (!isClient) return;
 
-      setWords((prevWords) =>
-        prevWords.map((word) => {
-          if (word.id !== wordId) return word;
+    setWords(prevWords =>
+      prevWords.map(word => {
+        if (word.id !== wordId) return word;
 
-          const sm2Result = calculateSM2(word, quality);
-          const nextReviewDelay = sm2Result.interval * 24 * 60 * 60 * 1000; // تحويل أيام إلى ميللي ثانية
+        const now = getCurrentTimestamp();
+        const { interval, repetition, easeFactor } = calculateSM2Enhanced(word, quality);
 
-          return {
-            ...word,
-            correctCount:
-              quality >= 3 ? word.correctCount + 1 : word.correctCount,
-            incorrectCount:
-              quality < 3 ? word.incorrectCount + 1 : word.incorrectCount,
-            lastReviewed: currentTime,
-            nextReview: currentTime + nextReviewDelay,
-            quality: Math.max(0, Math.min(5, Number(quality))),
-            ...sm2Result,
-          };
-        })
-      );
-    },
-    [getCurrentTimestamp, setWords, isClient]
-  );
-
-  // ⚡ تحديث بسيط (صحيح/خطأ)
-  const updateProgress = useCallback(
-    (wordId: number, correct: boolean) => {
-      updateProgressWithQuality(wordId, correct ? 4 : 1);
-    },
-    [updateProgressWithQuality]
-  );
+        return {
+          ...word,
+          lastReviewed: now,
+          nextReview: now + (interval * 24 * 60 * 60 * 1000),
+          correctCount: quality >= 3 ? word.correctCount + 1 : word.correctCount,
+          incorrectCount: quality < 3 ? word.incorrectCount + 1 : word.incorrectCount,
+          interval,
+          repetition,
+          easeFactor,
+          quality,
+        };
+      })
+    );
+  }, [isClient, setWords, getCurrentTimestamp]);
 
   // ==========================================
-  // Category Management
+  // Category Management - بدون تغيير
   // ==========================================
-
-  // ⚡ إضافة تصنيف
   const addCategory = useCallback(
     (newCategory: string) => {
       if (!isClient) return;
@@ -498,8 +630,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // ==========================================
   // Data Management
   // ==========================================
-
-  // ⚡ تصدير البيانات
   const exportData = useCallback(() => {
     if (!isClient) return;
 
@@ -590,254 +720,177 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Test Management
   // ==========================================
 
-  // ⚡ إنشاء اختبار جديد
-  const createTest = useCallback(
-    (settings: TestSettings): Test => {
-      if (!isClient) throw new Error('Not on client side');
+  // 🔥 التحقق من صحة إعدادات الاختبار
+  const validateTest = useCallback((settings: TestSettings): TestValidation => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const suggestedFixes: string[] = [];
 
-      // فلترة الكلمات حسب الإعدادات
-      let filteredWords = words;
+    // التحقق من الكلمات المتاحة
+    let availableWords = words;
 
-      if (settings.categories.length > 0) {
-        filteredWords = filteredWords.filter((w) =>
-          settings.categories.includes(w.category)
-        );
-      }
+    if (settings.categories.length > 0) {
+      availableWords = availableWords.filter(w => settings.categories.includes(w.category));
+    }
 
-      if (
-        settings.difficulties.length > 0 &&
-        !settings.difficulties.includes('all')
-      ) {
-        filteredWords = filteredWords.filter((w) =>
-          settings.difficulties.includes(w.difficulty as DifficultyFilter)
-        );
-      }
+    if (settings.difficulties.length > 0 && !settings.difficulties.includes('all')) {
+      availableWords = availableWords.filter(w => 
+        settings.difficulties.includes(w.difficulty as DifficultyFilter)
+      );
+    }
 
-      // التأكد من وجود كلمات كافية
-      if (filteredWords.length === 0) {
-        throw new Error('لا توجد كلمات تطابق المعايير المحددة');
-      }
+    if (availableWords.length === 0) {
+      errors.push('لا توجد كلمات تطابق المعايير المحددة');
+      suggestedFixes.push('قم بتوسيع معايير الفلترة أو إضافة كلمات جديدة');
+    }
 
-      // اختيار عدد محدود من الكلمات
-      const selectedWords = settings.randomOrder
-        ? filteredWords
-            .sort(() => Math.random() - 0.5)
-            .slice(0, settings.questionCount)
-        : filteredWords.slice(0, settings.questionCount);
+    if (availableWords.length < settings.questionCount) {
+      warnings.push(`عدد الكلمات المتاحة (${availableWords.length}) أقل من عدد الأسئلة المطلوب (${settings.questionCount})`);
+      suggestedFixes.push(`قلل عدد الأسئلة إلى ${availableWords.length} أو أضف كلمات أكثر`);
+    }
 
-      // إنشاء أسئلة الاختبار
-      let questions: TestQuestion[] = [];
+    // التحقق من إعدادات المطابقة
+    if (settings.type === 'matching' && availableWords.length < 4) {
+      errors.push('اختبار المطابقة يحتاج على الأقل 4 كلمات');
+      suggestedFixes.push('أضف كلمات أكثر أو اختر نوع اختبار آخر');
+    }
 
-      if (settings.type === 'mixed') {
-        // 🔥 إصلاح: للاختبار المختلط، أنشئ أسئلة من أنواع مختلفة
-        questions = generateMixedQuestions(
-          selectedWords,
-          settings.questionCount
-        );
+    // التحقق من الوقت
+    if (settings.timeLimit && settings.timeLimit < 30) {
+      warnings.push('الوقت المحدد قصير جداً');
+      suggestedFixes.push('فكر في زيادة الوقت إلى دقيقتين على الأقل');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      suggestedFixes,
+    };
+  }, [words]);
+
+  // 🔥 إنشاء اختبار محسن
+  const createTest = useCallback((settings: TestSettings): Test => {
+    if (!isClient) throw new Error('Not on client side');
+
+    // التحقق من صحة الإعدادات
+    const validation = validateTest(settings);
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join(', '));
+    }
+
+    // فلترة الكلمات حسب الإعدادات
+    let availableWords = [...words];
+
+    if (settings.categories.length > 0) {
+      availableWords = availableWords.filter(w =>
+        settings.categories.includes(w.category)
+      );
+    }
+
+    if (settings.difficulties.length > 0 && !settings.difficulties.includes('all')) {
+      availableWords = availableWords.filter(w =>
+        settings.difficulties.includes(w.difficulty as DifficultyFilter)
+      );
+    }
+
+    // 🔥 تحسين: اختيار ذكي للكلمات
+    let selectedWords: Word[] = [];
+
+    if (settings.balanceDifficulty) {
+      // توزيع متوازن للصعوبات
+      const easyWords = availableWords.filter(w => w.difficulty === 'سهل');
+      const mediumWords = availableWords.filter(w => w.difficulty === 'متوسط');
+      const hardWords = availableWords.filter(w => w.difficulty === 'صعب');
+
+      const perGroup = Math.ceil(settings.questionCount / 3);
+      selectedWords = [
+        ...easyWords.slice(0, perGroup),
+        ...mediumWords.slice(0, perGroup),
+        ...hardWords.slice(0, perGroup),
+      ].slice(0, settings.questionCount);
+    } else if (settings.prioritizeWeak) {
+      // أولوية للكلمات الضعيفة
+      availableWords.sort((a, b) => {
+        const aScore = a.correctCount / Math.max(1, a.correctCount + a.incorrectCount);
+        const bScore = b.correctCount / Math.max(1, b.correctCount + b.incorrectCount);
+        return aScore - bScore;
+      });
+      selectedWords = availableWords.slice(0, settings.questionCount);
+    } else {
+      // الطريقة العادية مع تحسين
+      if (settings.randomOrder) {
+        // خلط ذكي يضمن عدم التكرار
+        const shuffled = [...availableWords].sort(() => Math.random() - 0.5);
+        selectedWords = shuffled.slice(0, settings.questionCount);
       } else {
-        // للاختبارات العادية، أنشئ أسئلة من نوع واحد
-        questions = selectedWords.map((word, index) =>
-          generateQuestionByType(word, settings.type, index, filteredWords)
-        );
+        selectedWords = availableWords.slice(0, settings.questionCount);
       }
+    }
 
-      const test: Test = {
-        id: `test_${Date.now()}`,
-        name: `اختبار ${getTestTypeName(
-          settings.type
-        )} - ${new Date().toLocaleDateString('ar-SA')}`,
-        description: `اختبار يحتوي على ${questions.length} سؤال`,
-        settings,
-        questions,
-        createdAt: Date.now(),
-        isActive: false,
-      };
+    // 🔥 إنشاء أسئلة محسن
+    let questions: TestQuestion[] = [];
 
-      return test;
-    },
-    [words, isClient]
-  );
+    if (settings.type === 'mixed') {
+      questions = generateMixedQuestions(selectedWords, settings.questionCount);
+    } else {
+      questions = selectedWords.map(word => generateQuestionByType(word, settings.type, selectedWords));
+    }
 
-  // 🔥 دالة جديدة لإنشاء أسئلة مختلطة
-  const generateMixedQuestions = (
-    words: Word[],
-    questionCount: number
-  ): TestQuestion[] => {
+    // إنشاء الاختبار
+    const test: Test = {
+      id: `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: `اختبار ${getTestTypeName(settings.type)} - ${new Date().toLocaleDateString('ar-SA')}`,
+      description: `اختبار يحتوي على ${questions.length} سؤال`,
+      settings,
+      questions,
+      createdAt: Date.now(),
+      isActive: false,
+      attempts: 0,
+    };
+
+    return test;
+  }, [words, isClient, validateTest]);
+
+  // 🔥 دوال مساعدة لإنشاء الأسئلة
+  const generateMixedQuestions = (words: Word[], questionCount: number): TestQuestion[] => {
     const questions: TestQuestion[] = [];
-    const availableTypes: TestType[] = [
-      'multiple_choice',
-      'typing',
-      'true_false',
-    ];
+    const availableTypes: TestType[] = ['multiple_choice', 'typing', 'true_false'];
 
-    // إضافة مطابقة إذا كان لدينا كلمات كافية (4 كلمات على الأقل)
     if (words.length >= 4) {
       availableTypes.push('matching');
     }
 
     for (let i = 0; i < questionCount && i < words.length; i++) {
       const word = words[i];
-
-      // اختيار نوع السؤال بشكل دوري ومتوازن
       let questionType: TestType;
 
-      if (i % 4 === 0) {
-        questionType = 'multiple_choice';
-      } else if (i % 4 === 1) {
-        questionType = 'typing';
-      } else if (i % 4 === 2) {
-        questionType = 'true_false';
-      } else {
-        questionType = availableTypes.includes('matching')
-          ? 'matching'
-          : 'multiple_choice';
-      }
+      // توزيع متوازن للأنواع
+      if (i % 4 === 0) questionType = 'multiple_choice';
+      else if (i % 4 === 1) questionType = 'typing';
+      else if (i % 4 === 2) questionType = 'true_false';
+      else questionType = availableTypes.includes('matching') ? 'matching' : 'multiple_choice';
 
-      // إنشاء السؤال حسب النوع
-      const question = generateQuestionByType(word, questionType, i, words);
+      const question = generateQuestionByType(word, questionType, words);
       questions.push(question);
     }
 
-    // خلط الأسئلة للحصول على ترتيب عشوائي
-    return questions.sort(() => Math.random() - 0.5);
+    return questions;
   };
 
-  // 🔥 دالة مساعدة لإنشاء سؤال حسب النوع
-  const generateQuestionByType = (
-    word: Word,
-    type: TestType,
-    index: number,
-    allWords: Word[]
-  ): TestQuestion => {
-    const questionId = `q_${Date.now()}_${index}`;
-
+  const generateQuestionByType = (word: Word, type: TestType, allWords: Word[]): TestQuestion => {
     switch (type) {
       case 'multiple_choice':
-        return {
-          id: questionId,
-          wordId: word.id,
-          type: 'multiple_choice',
-          question: `ما معنى "${word.word}"؟`,
-          correctAnswer: word.meaning,
-          options: generateMultipleChoiceOptions(word, allWords),
-          difficulty: getDifficultyNumber(word.difficulty),
-        };
-
+        return EnhancedQuestionGenerator.generateMultipleChoice(word, allWords);
       case 'typing':
-        return {
-          id: questionId,
-          wordId: word.id,
-          type: 'typing',
-          question: `اكتب معنى "${word.word}"`,
-          correctAnswer: word.meaning,
-          difficulty: getDifficultyNumber(word.difficulty),
-        };
-
+        return EnhancedQuestionGenerator.generateTypingQuestion(word);
       case 'true_false':
-        // اختيار عشوائي بين جملة صحيحة أو خاطئة
-        const isCorrectStatement = Math.random() > 0.5;
-
-        if (isCorrectStatement) {
-          return {
-            id: questionId,
-            wordId: word.id,
-            type: 'true_false',
-            question: `هل "${word.word}" تعني "${word.meaning}"؟`,
-            correctAnswer: 'true',
-            difficulty: getDifficultyNumber(word.difficulty),
-          };
-        } else {
-          // إنشاء معنى خاطئ من كلمة أخرى
-          const wrongMeaning = getRandomWrongMeaning(word, allWords);
-          return {
-            id: questionId,
-            wordId: word.id,
-            type: 'true_false',
-            question: `هل "${word.word}" تعني "${wrongMeaning}"؟`,
-            correctAnswer: 'false',
-            difficulty: getDifficultyNumber(word.difficulty),
-          };
-        }
-
+        return EnhancedQuestionGenerator.generateTrueFalseQuestion(word, allWords);
       case 'matching':
-        // للمطابقة، نحتاج مجموعة من الكلمات
-        const matchingWords = allWords.slice(0, 4);
-        const options: Record<string, string> = {};
-        matchingWords.forEach((w) => {
-          options[w.word] = w.meaning;
-        });
-
-        return {
-          id: questionId,
-          wordId: word.id,
-          type: 'matching',
-          question: 'اربط كل كلمة بمعناها الصحيح',
-          correctAnswer: JSON.stringify(options),
-          options: Object.keys(options),
-          difficulty: getDifficultyNumber(word.difficulty),
-        };
-
+        return EnhancedQuestionGenerator.generateMatchingQuestion(allWords.slice(0, 6));
       default:
-        // fallback للاختيار المتعدد
-        return {
-          id: questionId,
-          wordId: word.id,
-          type: 'multiple_choice',
-          question: `ما معنى "${word.word}"؟`,
-          correctAnswer: word.meaning,
-          options: generateMultipleChoiceOptions(word, allWords),
-          difficulty: getDifficultyNumber(word.difficulty),
-        };
+        return EnhancedQuestionGenerator.generateMultipleChoice(word, allWords);
     }
-  };
-
-  // 🔥 دوال مساعدة
-  const getDifficultyNumber = (difficulty: string): number => {
-    switch (difficulty) {
-      case 'سهل':
-        return 1;
-      case 'متوسط':
-        return 2;
-      case 'صعب':
-        return 3;
-      default:
-        return 2;
-    }
-  };
-
-  const getRandomWrongMeaning = (
-    currentWord: Word,
-    allWords: Word[]
-  ): string => {
-    const otherWords = allWords.filter((w) => w.id !== currentWord.id);
-    if (otherWords.length === 0) return 'معنى خاطئ';
-
-    const randomWord =
-      otherWords[Math.floor(Math.random() * otherWords.length)];
-    return randomWord.meaning;
-  };
-
-  const generateMultipleChoiceOptions = (
-    correctWord: Word,
-    allWords: Word[]
-  ): string[] => {
-    const options = [correctWord.meaning];
-
-    // إضافة 3 خيارات خاطئة عشوائية
-    const otherWords = allWords.filter((w) => w.id !== correctWord.id);
-    const shuffledOthers = otherWords.sort(() => Math.random() - 0.5);
-
-    for (let i = 0; i < 3 && i < shuffledOthers.length; i++) {
-      options.push(shuffledOthers[i].meaning);
-    }
-
-    // إذا لم نجد كلمات كافية، أضف خيارات وهمية
-    while (options.length < 4) {
-      options.push(`خيار وهمي ${options.length}`);
-    }
-
-    // خلط الخيارات
-    return options.sort(() => Math.random() - 0.5);
   };
 
   const getTestTypeName = (type: string): string => {
@@ -851,83 +904,104 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     return names[type as keyof typeof names] || 'عام';
   };
 
-  // ⚡ بدء اختبار
-  const startTest = useCallback(
-    (testId: string) => {
-      if (!isClient) return;
+  // باقي وظائف إدارة الاختبارات - محسنة
+  const startTest = useCallback((testId: string) => {
+    if (!isClient) return;
 
-      setTests((prevTests) =>
-        prevTests.map((test) => ({
-          ...test,
-          isActive: test.id === testId,
-        }))
-      );
-    },
-    [setTests, isClient]
-  );
-
-  // ⚡ حفظ نتائج الاختبار
-  const submitTestResults = useCallback(
-    (testId: string, results: TestResults) => {
-      if (!isClient) return;
-
-      setTests((prevTests) =>
-        prevTests.map((test) =>
-          test.id === testId
-            ? { ...test, results, completedAt: Date.now(), isActive: false }
-            : test
-        )
-      );
-    },
-    [setTests, isClient]
-  );
-
-  // ⚡ الحصول على تاريخ الاختبارات
-  const getTestHistory = useCallback((): Test[] => {
-    if (!isClient) return [];
-    return tests
-      .filter((test) => test.completedAt)
-      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
-  }, [tests, isClient]);
-
-  // ⚡ حذف اختبار
-  const deleteTest = useCallback(
-    (testId: string) => {
-      if (!isClient) return;
-
-      setTests((prevTests) => prevTests.filter((test) => test.id !== testId));
-    },
-    [setTests, isClient]
-  );
-
-  // ⚡ الحصول على الاختبار النشط
-  const getActiveTest = useCallback((): Test | null => {
-    if (!isClient) return null;
-    return tests.find((test) => test.isActive) || null;
-  }, [tests, isClient]);
-
-  // ⚡ إحصائيات الاختبارات
-  const getTestStats = useCallback(() => {
-    if (!isClient) {
-      return {
-        totalTests: 0,
-        completedTests: 0,
-        averageScore: 0,
-        bestScore: 0,
-        totalTestTime: 0,
-      };
-    }
-
-    const completedTests = tests.filter(
-      (test) => test.completedAt && test.results
+    setTests(prevTests =>
+      prevTests.map(test => ({
+        ...test,
+        isActive: test.id === testId,
+      }))
     );
-    const totalTests = tests.length;
+  }, [setTests, isClient]);
 
-    const scores = completedTests.map((test) => test.results!.percentage);
-    const averageScore =
-      scores.length > 0
-        ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-        : 0;
+  const submitTestResults = useCallback((testId: string, results: TestResults) => {
+    if (!isClient) return;
+
+    setTests(prevTests =>
+      prevTests.map(test =>
+        test.id === testId
+          ? {
+              ...test,
+              results,
+              completedAt: Date.now(),
+              isActive: false,
+              attempts: (test.attempts || 0) + 1,
+              bestScore: Math.max(test.bestScore || 0, results.percentage),
+            }
+          : test
+      )
+    );
+
+    // تحديث تقدم الكلمات بناءً على النتائج
+    results.questionsData.forEach(question => {
+      if (question.isCorrect !== undefined) {
+        const quality = calculateQuestionQuality(question, results);
+        updateProgressWithQuality(question.wordId, quality);
+      }
+    });
+  }, [setTests, isClient, updateProgressWithQuality]);
+
+  // حساب جودة الإجابة للSM-2
+  const calculateQuestionQuality = (question: TestQuestion, results: TestResults): number => {
+    if (question.isCorrect === undefined) return 2;
+    
+    let baseQuality = question.isCorrect ? 4 : 2;
+    
+    // تعديل حسب وقت الإجابة
+    if (question.timeSpent && results.averageTimePerQuestion > 0) {
+      const timeRatio = question.timeSpent / results.averageTimePerQuestion;
+      
+      if (question.isCorrect) {
+        if (timeRatio <= 0.5) baseQuality = 5;      // سريع جداً
+        else if (timeRatio <= 0.8) baseQuality = 4; // سريع
+        else if (timeRatio >= 1.5) baseQuality = 3; // بطيء
+      }
+    }
+    
+    // تعديل حسب نوع السؤال
+    switch (question.type) {
+      case 'typing':
+        baseQuality += 0.5; // أصعب
+        break;
+      case 'multiple_choice':
+        baseQuality -= 0.3; // أسهل
+        break;
+      case 'true_false':
+        baseQuality -= 0.2; // أسهل
+        break;
+    }
+    
+    return Math.max(0, Math.min(5, baseQuality));
+  };
+
+  const getTestHistory = useCallback(() => tests, [tests]);
+
+  const deleteTest = useCallback((testId: string) => {
+    if (!isClient) return;
+    setTests(prevTests => prevTests.filter(test => test.id !== testId));
+  }, [isClient, setTests]);
+
+  const getActiveTest = useCallback(() => {
+    return tests.find(test => test.isActive) || null;
+  }, [tests]);
+
+  const getTestStats = useMemo(() => {
+    if (!isClient) return {
+      totalTests: 0,
+      completedTests: 0,
+      averageScore: 0,
+      bestScore: 0,
+      totalTestTime: 0,
+    };
+
+    const completedTests = tests.filter(test => test.results);
+    const scores = completedTests.map(test => test.results!.percentage);
+    
+    const averageScore = scores.length > 0
+      ? scores.reduce((sum, score) => sum + score, 0) / scores.length
+      : 0;
     const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
 
     const totalTestTime = completedTests.reduce(
@@ -936,7 +1010,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     );
 
     return {
-      totalTests,
+      totalTests: tests.length,
       completedTests: completedTests.length,
       averageScore: Math.round(averageScore),
       bestScore: Math.round(bestScore),
@@ -944,15 +1018,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     };
   }, [tests, isClient]);
 
-  // ⚡ حفظ اختبار في التاريخ
-  const saveTestToHistory = useCallback(
-    (test: Test) => {
-      if (!isClient) return;
-
-      setTests((prevTests) => [...prevTests, test]);
-    },
-    [setTests, isClient]
-  );
+  const saveTestToHistory = useCallback((test: Test) => {
+    if (!isClient) return;
+    setTests(prevTests => [...prevTests, test]);
+  }, [setTests, isClient]);
 
   // ==========================================
   // Context Value
@@ -983,6 +1052,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     // Test Management
     createTest,
+    validateTest,
     startTest,
     submitTestResults,
     getTestHistory,
@@ -1005,33 +1075,3 @@ export const useApp = (): AppContextType => {
   }
   return context;
 };
-
-// ==========================================
-// Helper Functions
-// ==========================================
-
-// دالة مساعدة لإنشاء خيارات الاختيار المتعدد
-function generateMultipleChoiceOptions(
-  correctWord: Word,
-  allWords: Word[]
-): string[] {
-  const options = [correctWord.meaning];
-
-  // إضافة 3 خيارات خاطئة عشوائية
-  const otherWords = allWords.filter((w) => w.id !== correctWord.id);
-  const randomWords = otherWords.sort(() => Math.random() - 0.5).slice(0, 3);
-
-  randomWords.forEach((word) => {
-    if (options.length < 4) {
-      options.push(word.meaning);
-    }
-  });
-
-  // إذا لم نجد كلمات كافية، أضف خيارات وهمية
-  while (options.length < 4) {
-    options.push(`خيار وهمي ${options.length}`);
-  }
-
-  // خلط الخيارات
-  return options.sort(() => Math.random() - 0.5);
-}

@@ -1,8 +1,7 @@
-// src/components/tests/TestManager.tsx
+// src/components/tests/TestManager.tsx - النسخة المحسنة
 'use client';
 
-import { Test, TestQuestion, TestResults } from '@/types/flashcard';
-import { QuestionGenerator } from '@/utils/QuestionGenerator';
+import { Test, TestQuestion, TestResults, TimerRef } from '@/types/flashcard';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -49,7 +48,7 @@ export default function TestManager({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showCurrentResult, setShowCurrentResult] = useState(false);
 
-  // Timer states
+  // Timer states - 🔥 إصلاح: استخدام TimerRef بدلاً من NodeJS.Timeout
   const [totalTimeLeft, setTotalTimeLeft] = useState(
     test.settings.timeLimit || 300
   );
@@ -57,9 +56,7 @@ export default function TestManager({
     test.settings.questionTimeLimit || 30
   );
   const [testStartTime, setTestStartTime] = useState<number | null>(null);
-  const [questionStartTime, setQuestionStartTime] = useState<number | null>(
-    null
-  );
+  const [questionStartTime, setQuestionStartTime] = useState<number | null>(null);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -71,9 +68,9 @@ export default function TestManager({
     totalTimeSpent: 0,
   });
 
-  // References
-  const totalTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // References - 🔥 إصلاح: استخدام TimerRef
+  const totalTimerRef = useRef<TimerRef>(null);
+  const questionTimerRef = useRef<TimerRef>(null);
   const questionTimeSpentRef = useRef<number>(0);
 
   // ==========================================
@@ -86,7 +83,7 @@ export default function TestManager({
   const progress = ((currentQuestionIndex + 1) / test.questions.length) * 100;
 
   // ==========================================
-  // Timer Management
+  // Enhanced Timer Management - 🔥 محسن
   // ==========================================
   const startTimers = useCallback(() => {
     const now = Date.now();
@@ -99,7 +96,7 @@ export default function TestManager({
 
     // Total timer
     if (test.settings.timeLimit && totalTimerRef.current === null) {
-      totalTimerRef.current = setInterval(() => {
+      totalTimerRef.current = window.setInterval(() => {
         setTotalTimeLeft((prev) => {
           if (prev <= 1) {
             handleTimeUp();
@@ -112,7 +109,7 @@ export default function TestManager({
 
     // Question timer
     if (test.settings.questionTimeLimit && questionTimerRef.current === null) {
-      questionTimerRef.current = setInterval(() => {
+      questionTimerRef.current = window.setInterval(() => {
         questionTimeSpentRef.current += 1;
         setQuestionTimeLeft((prev) => {
           if (prev <= 1) {
@@ -161,179 +158,141 @@ export default function TestManager({
   };
 
   const handleTimeUp = () => {
-    pauseTimers();
-    finishTest();
+    console.log('⏰ Total time up!');
+    completeTest();
   };
 
   const handleQuestionTimeUp = () => {
+    console.log('⏰ Question time up!');
     if (test.settings.allowSkip) {
-      handleSkipQuestion();
+      handleSkip();
     } else {
-      // Force submit empty answer
-      handleAnswer('');
+      // Force move to next question
+      nextQuestion();
     }
   };
 
   // ==========================================
-  // Navigation
+  // Question Navigation - محسن
   // ==========================================
-  const goToQuestion = (index: number) => {
+  const nextQuestion = useCallback(() => {
+    if (hasNextQuestion) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setShowCurrentResult(false);
+      resetQuestionTimer();
+    } else {
+      completeTest();
+    }
+  }, [hasNextQuestion, resetQuestionTimer]);
+
+  const prevQuestion = useCallback(() => {
+    if (hasPrevQuestion) {
+      setCurrentQuestionIndex(prev => prev - 1);
+      setShowCurrentResult(false);
+      resetQuestionTimer();
+    }
+  }, [hasPrevQuestion, resetQuestionTimer]);
+
+  const goToQuestion = useCallback((index: number) => {
     if (index >= 0 && index < test.questions.length) {
       setCurrentQuestionIndex(index);
       setShowCurrentResult(false);
       resetQuestionTimer();
     }
-  };
-
-  const nextQuestion = () => {
-    if (hasNextQuestion) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-      setShowCurrentResult(false);
-      resetQuestionTimer();
-    }
-  };
-
-  const prevQuestion = () => {
-    if (hasPrevQuestion) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-      setShowCurrentResult(false);
-      resetQuestionTimer();
-    }
-  };
-
-  const handleSkipQuestion = () => {
-    const questionId = currentQuestion.id;
-    setAnswers((prev) => ({ ...prev, [questionId]: '' }));
-    setStats((prev) => ({ ...prev, skipped: prev.skipped + 1, streak: 0 }));
-
-    if (hasNextQuestion) {
-      nextQuestion();
-    } else {
-      finishTest();
-    }
-  };
+  }, [test.questions.length, resetQuestionTimer]);
 
   // ==========================================
-  // Answer Processing
+  // Answer Handling - محسن
   // ==========================================
-  const handleAnswer = (answer: string | Record<string, string> | boolean) => {
+  const handleAnswer = useCallback((answer: string | Record<string, string> | boolean) => {
     if (testState !== 'active') return;
 
     const questionId = currentQuestion.id;
+    const timeSpent = questionTimeSpentRef.current;
+    
+    // تحويل الإجابة إلى string
     let answerString: string;
-
-    // Convert answer to string
-    if (typeof answer === 'boolean') {
-      answerString = answer.toString();
-    } else if (typeof answer === 'object') {
+    if (typeof answer === 'object' && answer !== null) {
       answerString = JSON.stringify(answer);
     } else {
-      answerString = answer;
+      answerString = String(answer);
     }
 
-    // Save answer
-    setAnswers((prev) => ({ ...prev, [questionId]: answerString }));
+    // حفظ الإجابة
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answerString,
+    }));
 
-    // Calculate if correct
-    const isCorrect = evaluateAnswer(currentQuestion, answerString);
-
-    // Calculate time spent
-    const timeSpent = questionTimeSpentRef.current;
-
-    // 🔥 إصلاح: تحديث السؤال فوراً وبشكل مباشر
-    const updatedQuestion = {
+    // تحديث السؤال مع الإجابة والوقت
+    const updatedQuestion: TestQuestion = {
       ...currentQuestion,
-      timeSpent: timeSpent,
       userAnswer: answerString,
-      isCorrect: isCorrect,
+      timeSpent,
+      isCorrect: validateAnswer(currentQuestion, answerString),
     };
 
-    // تحديث السؤال في مصفوفة الأسئلة
-    test.questions[currentQuestionIndex] = updatedQuestion;
+    // تحديث الإحصائيات
+    const isCorrect = updatedQuestion.isCorrect;
+    setStats(prev => ({
+      ...prev,
+      correct: isCorrect ? prev.correct + 1 : prev.correct,
+      incorrect: !isCorrect ? prev.incorrect + 1 : prev.incorrect,
+      streak: isCorrect ? prev.streak + 1 : 0,
+      maxStreak: isCorrect ? Math.max(prev.maxStreak, prev.streak + 1) : prev.maxStreak,
+    }));
 
-    // Update statistics (للعرض فقط)
-    setStats((prev) => {
-      const newStats = { ...prev };
-
-      if (isCorrect) {
-        newStats.correct += 1;
-        newStats.streak += 1;
-        newStats.maxStreak = Math.max(newStats.maxStreak, newStats.streak);
-      } else {
-        newStats.incorrect += 1;
-        newStats.streak = 0;
-      }
-
-      newStats.totalTimeSpent += timeSpent;
-      return newStats;
-    });
-
-    // Show result if instant feedback is enabled
+    // عرض النتيجة الفورية إذا كانت مفعلة
     if (test.settings.instantFeedback) {
       setShowCurrentResult(true);
       setTimeout(() => {
-        setShowCurrentResult(false);
-        if (hasNextQuestion) {
-          nextQuestion();
-        } else {
-          // 🔥 إصلاح: تأخير قليل لضمان تحديث جميع البيانات
-          setTimeout(() => {
-            finishTest();
-          }, 100);
-        }
-      }, 2500);
-    } else {
-      // Move to next question or finish
-      if (hasNextQuestion) {
         nextQuestion();
-      } else {
-        // 🔥 إصلاح: تأخير قليل لضمان تحديث جميع البيانات
-        setTimeout(() => {
-          finishTest();
-        }, 100);
-      }
+      }, 2000);
+    } else {
+      nextQuestion();
     }
-  };
+  }, [testState, currentQuestion, nextQuestion, test.settings.instantFeedback]);
+
+  const handleSkip = useCallback(() => {
+    if (!test.settings.allowSkip || testState !== 'active') return;
+
+    const questionId = currentQuestion.id;
+    const timeSpent = questionTimeSpentRef.current;
+
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: '',
+    }));
+
+    setStats(prev => ({
+      ...prev,
+      skipped: prev.skipped + 1,
+      streak: 0,
+    }));
+
+    nextQuestion();
+  }, [test.settings.allowSkip, testState, currentQuestion.id, nextQuestion]);
 
   // ==========================================
-  // Answer Evaluation
+  // Answer Validation - محسن
   // ==========================================
-  const evaluateAnswer = (
-    question: TestQuestion,
-    userAnswer: string
-  ): boolean => {
+  const validateAnswer = (question: TestQuestion, userAnswer: string): boolean => {
     if (!userAnswer || userAnswer.trim() === '') return false;
 
     switch (question.type) {
       case 'multiple_choice':
       case 'true_false':
-        return userAnswer === question.correctAnswer;
+        return userAnswer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
 
       case 'typing':
-        // Use the smart validation from QuestionGenerator
-        try {
-          return QuestionGenerator.validateTypingAnswer(
-            userAnswer,
-            question.correctAnswer
-          );
-        } catch {
-          // Fallback to simple comparison
-          return (
-            userAnswer.toLowerCase().trim() ===
-            question.correctAnswer.toLowerCase().trim()
-          );
-        }
+        return validateTypingAnswer(userAnswer, question.correctAnswer);
 
       case 'matching':
         try {
           const userMatches = JSON.parse(userAnswer);
           const correctMatches = JSON.parse(question.correctAnswer);
-
-          // Check if all matches are correct
-          const correctKeys = Object.keys(correctMatches);
-          return correctKeys.every(
-            (key) => userMatches[key] === correctMatches[key]
-          );
+          
+          return JSON.stringify(userMatches) === JSON.stringify(correctMatches);
         } catch {
           return false;
         }
@@ -343,202 +302,180 @@ export default function TestManager({
     }
   };
 
-  // ==========================================
-  // Test Completion
-  // ==========================================
+  const validateTypingAnswer = (userAnswer: string, correctAnswer: string): boolean => {
+    const normalize = (text: string) =>
+      text.trim()
+          .toLowerCase()
+          .replace(/[^\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\w\s]/g, '')
+          .replace(/\s+/g, ' ');
 
-  const finishTest = () => {
+    const normalizedUser = normalize(userAnswer);
+    const normalizedCorrect = normalize(correctAnswer);
+
+    // تطابق تام
+    if (normalizedUser === normalizedCorrect) return true;
+
+    // تطابق جزئي للإجابات الطويلة (85% تشابه)
+    if (normalizedCorrect.length > 10) {
+      const similarity = calculateSimilarity(normalizedUser, normalizedCorrect);
+      return similarity >= 0.85;
+    }
+
+    return false;
+  };
+
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  };
+
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  };
+
+  // ==========================================
+  // Test Completion - محسن
+  // ==========================================
+  const completeTest = useCallback(() => {
     pauseTimers();
     setTestState('completed');
 
     const endTime = Date.now();
-    const startTime = testStartTime || endTime;
+    const totalTimeSpent = testStartTime ? endTime - testStartTime : 0;
 
-    // 🔥 إصلاح: حساب النتائج مباشرة من الأسئلة بدلاً من الـ stats
-    const directResults = calculateResultsFromQuestions();
+    // إنشاء نتائج مفصلة
+    const questionsData = test.questions.map(question => ({
+      ...question,
+      userAnswer: answers[question.id] || '',
+      timeSpent: question.timeSpent || 0,
+      isCorrect: answers[question.id] ? validateAnswer(question, answers[question.id]) : false,
+    }));
+
+    // حساب الإحصائيات
+    const correctAnswers = questionsData.filter(q => q.isCorrect).length;
+    const wrongAnswers = questionsData.filter(q => !q.isCorrect && q.userAnswer).length;
+    const skippedAnswers = questionsData.filter(q => !q.userAnswer).length;
+
+    const percentage = test.questions.length > 0 
+      ? Math.round((correctAnswers / test.questions.length) * 100) 
+      : 0;
+
+    // تحليل الأداء حسب الفئات والصعوبة
+    const breakdown = calculateBreakdown(questionsData);
+    const performance = calculatePerformance(questionsData, totalTimeSpent);
 
     const results: TestResults = {
       id: `result_${Date.now()}`,
       testId: test.id,
-      startTime,
+      startTime: testStartTime || endTime,
       endTime,
-      totalScore: calculateScore(),
-      maxScore: test.questions.length * 100,
-
-      // 🔥 استخدم النتائج المحسوبة مباشرة
-      percentage: directResults.percentage,
+      totalScore: correctAnswers * 10, // 10 نقاط لكل إجابة صحيحة
+      maxScore: test.questions.length * 10,
+      percentage,
       totalQuestions: test.questions.length,
-      correctAnswers: directResults.correctAnswers,
-      wrongAnswers: directResults.wrongAnswers,
-      skippedAnswers: directResults.skippedAnswers,
-
-      timeSpent: Math.floor((endTime - startTime) / 1000),
-      averageTimePerQuestion:
-        directResults.totalTimeSpent / test.questions.length,
-      questionsData: test.questions,
-      breakdown: calculateBreakdown(),
-    };
-
-    onComplete(results);
-  };
-
-  const calculateResultsFromQuestions = () => {
-    let correctAnswers = 0;
-    let wrongAnswers = 0;
-    let skippedAnswers = 0;
-    let totalTimeSpent = 0;
-
-    test.questions.forEach((question) => {
-      // حساب الوقت المستغرق
-      totalTimeSpent += question.timeSpent || 0;
-
-      // تحديد حالة الإجابة
-      if (!question.userAnswer || question.userAnswer.trim() === '') {
-        // لم يتم الإجابة عليه
-        skippedAnswers++;
-      } else if (question.isCorrect === true) {
-        // إجابة صحيحة
-        correctAnswers++;
-      } else if (question.isCorrect === false) {
-        // إجابة خاطئة
-        wrongAnswers++;
-      } else {
-        // في حالة عدم تحديد isCorrect، نحسبه الآن
-        const isCorrect = evaluateAnswer(question, question.userAnswer || '');
-        if (isCorrect) {
-          correctAnswers++;
-        } else {
-          wrongAnswers++;
-        }
-      }
-    });
-
-    const percentage =
-      test.questions.length > 0
-        ? (correctAnswers / test.questions.length) * 100
-        : 0;
-
-    return {
       correctAnswers,
       wrongAnswers,
       skippedAnswers,
-      percentage,
-      totalTimeSpent,
+      timeSpent: Math.round(totalTimeSpent / 1000), // بالثواني
+      averageTimePerQuestion: test.questions.length > 0 
+        ? Math.round(totalTimeSpent / test.questions.length / 1000) 
+        : 0,
+      questionsData,
+      breakdown,
+      performance,
     };
-  };
 
-  const calculateScore = (): number => {
-    let totalScore = 0;
+    onComplete(results);
+  }, [test, testStartTime, answers, pauseTimers, onComplete]);
 
-    test.questions.forEach((question) => {
+  // حساب التفصيل حسب الفئات والصعوبة
+  const calculateBreakdown = (questionsData: TestQuestion[]) => {
+    const byCategory: Record<string, { correct: number; total: number; percentage: number }> = {};
+    const byDifficulty: Record<string, { correct: number; total: number; percentage: number }> = {};
+    const byType: Record<string, { correct: number; total: number; percentage: number }> = {};
+
+    questionsData.forEach(question => {
+      // حسب الفئة (نحتاج للحصول على معلومات الكلمة)
+      // هذا يتطلب تمرير معلومات الكلمات، سنتركه مبسط حالياً
+      
+      // حسب النوع
+      if (!byType[question.type]) {
+        byType[question.type] = { correct: 0, total: 0, percentage: 0 };
+      }
+      byType[question.type].total++;
       if (question.isCorrect) {
-        const baseScore = 100;
-
-        // Difficulty bonus
-        const difficultyBonus = (question.difficulty || 3) * 10;
-
-        // Speed bonus (if answered quickly)
-        const timeSpent = question.timeSpent || 30;
-        const maxTime = test.settings.questionTimeLimit || 30;
-        const speedBonus = Math.max(0, (maxTime - timeSpent) * 2);
-
-        totalScore += baseScore + difficultyBonus + speedBonus;
+        byType[question.type].correct++;
       }
     });
 
-    return totalScore;
-  };
-
-  const calculateBreakdown = () => {
-    const byCategory: Record<string, { correct: number; total: number }> = {};
-    const byDifficulty: Record<string, { correct: number; total: number }> = {};
-    const byType: Record<string, { correct: number; total: number }> = {};
-
-    test.questions.forEach((question) => {
-      // By type
-      const type = question.type;
-      if (!byType[type]) byType[type] = { correct: 0, total: 0 };
-      byType[type].total += 1;
-
-      // 🔥 إصلاح: استخدم قيمة isCorrect المحدثة أو احسبها
-      const isCorrect =
-        question.isCorrect !== undefined
-          ? question.isCorrect
-          : evaluateAnswer(question, question.userAnswer || '');
-
-      if (isCorrect) byType[type].correct += 1;
-
-      // By difficulty (if available)
-      const difficulty = question.difficulty?.toString() || 'متوسط';
-      if (!byDifficulty[difficulty])
-        byDifficulty[difficulty] = { correct: 0, total: 0 };
-      byDifficulty[difficulty].total += 1;
-      if (isCorrect) byDifficulty[difficulty].correct += 1;
+    // حساب النسب المئوية
+    Object.keys(byType).forEach(type => {
+      const data = byType[type];
+      data.percentage = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
     });
 
     return { byCategory, byDifficulty, byType };
   };
 
-  // ==========================================
-  // Component Rendering
-  // ==========================================
-  const renderCurrentTest = () => {
-    if (!currentQuestion) return null;
+  // حساب الأداء
+  const calculatePerformance = (questionsData: TestQuestion[], totalTime: number) => {
+    const times = questionsData
+      .map(q => q.timeSpent || 0)
+      .filter(t => t > 0);
 
-    const commonProps = {
-      question: currentQuestion,
-      timeLeft: test.settings.questionTimeLimit ? questionTimeLeft : undefined,
-      showResult: showCurrentResult,
-      correctAnswer: currentQuestion.correctAnswer,
-      userAnswer: answers[currentQuestion.id],
-      isCompleted: testState === 'completed',
+    const fastestTime = times.length > 0 ? Math.min(...times) : 0;
+    const slowestTime = times.length > 0 ? Math.max(...times) : 0;
+    
+    // حساب الثبات (كلما قل الانحراف المعياري، كان الأداء أكثر ثباتاً)
+    const avgTime = times.length > 0 ? times.reduce((sum, t) => sum + t, 0) / times.length : 0;
+    const variance = times.length > 0 
+      ? times.reduce((sum, t) => sum + Math.pow(t - avgTime, 2), 0) / times.length 
+      : 0;
+    const stdDev = Math.sqrt(variance);
+    const consistency = avgTime > 0 ? Math.max(0, 1 - (stdDev / avgTime)) : 0;
+
+    return {
+      fastestTime,
+      slowestTime,
+      consistency: Math.round(consistency * 100) / 100,
+      improvement: 0, // يمكن حسابه بمقارنة الاختبارات السابقة
     };
-
-    // 🔥 إصلاح: للاختبار المختلط، مرر props إضافية
-    if (test.settings.type === 'mixed') {
-      return (
-        <MixedTest
-          {...commonProps}
-          onAnswer={handleAnswer}
-          currentQuestionIndex={currentQuestionIndex + 1}
-          totalQuestions={test.questions.length}
-        />
-      );
-    }
-
-    // 🔥 إصلاح: للاختبارات الفردية، استخدم نوع السؤال وليس نوع الاختبار
-    switch (currentQuestion.type) {
-      case 'multiple_choice':
-        return <MultipleChoiceTest {...commonProps} onAnswer={handleAnswer} />;
-      case 'typing':
-        return <TypingTest {...commonProps} onAnswer={handleAnswer} />;
-      case 'matching':
-        return <MatchingTest {...commonProps} onAnswer={handleAnswer} />;
-      case 'true_false':
-        return <TrueFalseTest {...commonProps} onAnswer={handleAnswer} />;
-      default:
-        return (
-          <div className="text-center text-red-400 p-8">
-            <div className="bg-red-900/20 border border-red-600/50 rounded-2xl p-6">
-              <h3 className="text-xl font-bold mb-2">نوع السؤال غير مدعوم</h3>
-              <p className="text-gray-300 mb-4">
-                نوع السؤال &quot;{currentQuestion.type}&quot; غير متاح حالياً
-              </p>
-              <button
-                onClick={() => handleSkipQuestion()}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-xl transition-all"
-              >
-                تخطي السؤال
-              </button>
-            </div>
-          </div>
-        );
-    }
   };
 
   // ==========================================
   // Effects
   // ==========================================
+  
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       pauseTimers();
@@ -546,231 +483,268 @@ export default function TestManager({
   }, [pauseTimers]);
 
   // ==========================================
+  // Render Functions
+  // ==========================================
+  
+  const renderCurrentQuestion = () => {
+    if (!currentQuestion) return null;
+
+    const commonProps = {
+      question: currentQuestion,
+      timeLeft: questionTimeLeft,
+      showResult: showCurrentResult,
+      correctAnswer: currentQuestion.correctAnswer,
+      userAnswer: answers[currentQuestion.id],
+      isCompleted: testState === 'completed',
+    };
+
+    switch (currentQuestion.type) {
+      case 'multiple_choice':
+        return (
+          <MultipleChoiceTest
+            {...commonProps}
+            onAnswer={handleAnswer}
+          />
+        );
+
+      case 'typing':
+        return (
+          <TypingTest
+            {...commonProps}
+            onAnswer={handleAnswer}
+          />
+        );
+
+      case 'matching':
+        return (
+          <MatchingTest
+            {...commonProps}
+            onAnswer={handleAnswer}
+          />
+        );
+
+      case 'true_false':
+        return (
+          <TrueFalseTest
+            {...commonProps}
+            onAnswer={handleAnswer}
+          />
+        );
+
+      case 'mixed':
+      default:
+        return (
+          <MixedTest
+            {...commonProps}
+            onAnswer={handleAnswer}
+            currentQuestionIndex={currentQuestionIndex + 1}
+            totalQuestions={test.questions.length}
+          />
+        );
+    }
+  };
+
+  // ==========================================
   // Main Render
   // ==========================================
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800">
-      {/* Test Header */}
-      <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-xl border-b border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {/* Ready State Header */}
-          {testState === 'ready' && (
-            <div className="text-center">
-              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
-                {test.name}
-              </h1>
-              <p className="text-gray-400 mb-6">
-                {test.description ||
-                  `${test.questions.length} أسئلة • ${Math.ceil(
-                    (test.settings.timeLimit || 300) / 60
-                  )} دقائق`}
+  
+  if (testState === 'ready') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-gray-900/50 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 text-center">
+          <div className="text-6xl mb-6">🚀</div>
+          
+          <h1 className="text-3xl font-bold text-white mb-4">
+            {test.name}
+          </h1>
+          
+          <div className="space-y-4 text-gray-300 mb-8">
+            <p className="flex items-center justify-center gap-2">
+              <Target className="w-5 h-5" />
+              {test.questions.length} سؤال
+            </p>
+            
+            {test.settings.timeLimit && (
+              <p className="flex items-center justify-center gap-2">
+                <Clock className="w-5 h-5" />
+                {Math.floor(test.settings.timeLimit / 60)} دقيقة
               </p>
+            )}
+            
+            <p className="flex items-center justify-center gap-2">
+              <Zap className="w-5 h-5" />
+              {test.settings.type === 'mixed' ? 'أسئلة متنوعة' : 'نوع واحد'}
+            </p>
+          </div>
+          
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={startTest}
+              className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105"
+            >
+              <Play className="w-5 h-5" />
+              بدء الاختبار
+            </button>
+            
+            <button
+              onClick={onExit}
+              className="flex items-center gap-2 px-8 py-4 bg-gray-700 text-gray-300 font-semibold rounded-xl hover:bg-gray-600 transition-all"
+            >
+              <Home className="w-5 h-5" />
+              العودة
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-              <button
-                onClick={startTest}
-                className="inline-flex items-center space-x-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105 active:scale-95 shadow-lg"
-              >
-                <Play size={24} />
-                <span>ابدأ الاختبار</span>
-              </button>
-            </div>
-          )}
-
-          {/* Active/Paused State Header */}
-          {(testState === 'active' || testState === 'paused') && (
-            <div className="flex items-center justify-between">
-              {/* Left Side - Test Info */}
-              <div className="flex items-center space-x-4">
-                <div className="text-white">
-                  <h2 className="font-bold text-lg lg:text-xl">{test.name}</h2>
-                  <p className="text-gray-400 text-sm">
-                    السؤال {currentQuestionIndex + 1} من {test.questions.length}
-                  </p>
-                </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            
+            {/* Progress */}
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-400">
+                السؤال {currentQuestionIndex + 1} من {test.questions.length}
               </div>
-
-              {/* Center - Progress */}
-              <div className="hidden lg:flex items-center space-x-6">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle2 className="text-green-400" size={18} />
-                  <span className="text-green-400 font-bold">
-                    {stats.correct}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <XCircle className="text-red-400" size={18} />
-                  <span className="text-red-400 font-bold">
-                    {stats.incorrect}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Target className="text-purple-400" size={18} />
-                  <span className="text-purple-400 font-bold">
-                    {stats.streak}
-                  </span>
-                </div>
-              </div>
-
-              {/* Right Side - Controls & Timers */}
-              <div className="flex items-center space-x-3">
-                {/* Total Timer */}
-                {test.settings.timeLimit && (
-                  <div
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-xl ${
-                      totalTimeLeft <= 60
-                        ? 'bg-red-900/30 text-red-400'
-                        : 'bg-blue-900/30 text-blue-400'
-                    }`}
-                  >
-                    <Timer size={16} />
-                    <span className="font-bold text-sm">
-                      {Math.floor(totalTimeLeft / 60)}:
-                      {String(totalTimeLeft % 60).padStart(2, '0')}
-                    </span>
-                  </div>
-                )}
-
-                {/* Controls */}
-                <div className="flex items-center space-x-2">
-                  {testState === 'active' ? (
-                    <button
-                      onClick={pauseTest}
-                      className="p-2 rounded-xl bg-yellow-600 hover:bg-yellow-700 text-white transition-all"
-                    >
-                      <Pause size={20} />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={resumeTest}
-                      className="p-2 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all"
-                    >
-                      <Play size={20} />
-                    </button>
-                  )}
-
-                  <button
-                    onClick={onExit}
-                    className="p-2 rounded-xl bg-red-600 hover:bg-red-700 text-white transition-all"
-                  >
-                    <Square size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Progress Bar */}
-          {(testState === 'active' || testState === 'paused') && (
-            <div className="mt-4">
-              <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out"
+              
+              <div className="w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
-          )}
+
+            {/* Timer */}
+            <div className="flex items-center gap-4">
+              {test.settings.timeLimit && (
+                <div className="flex items-center gap-2 text-orange-300">
+                  <Timer className="w-5 h-5" />
+                  <span className="font-mono">
+                    {Math.floor(totalTimeLeft / 60)}:{(totalTimeLeft % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+              
+              {test.settings.questionTimeLimit && (
+                <div className="flex items-center gap-2 text-blue-300">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-mono">
+                    {Math.floor(questionTimeLeft / 60)}:{(questionTimeLeft % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              {testState === 'active' && (
+                <button
+                  onClick={pauseTest}
+                  className="p-2 rounded-lg bg-orange-900/30 border border-orange-600/50 text-orange-300 hover:bg-orange-800/40 transition-colors"
+                  title="إيقاف مؤقت"
+                >
+                  <Pause className="w-5 h-5" />
+                </button>
+              )}
+              
+              {testState === 'paused' && (
+                <button
+                  onClick={resumeTest}
+                  className="p-2 rounded-lg bg-green-900/30 border border-green-600/50 text-green-300 hover:bg-green-800/40 transition-colors"
+                  title="استئناف"
+                >
+                  <Play className="w-5 h-5" />
+                </button>
+              )}
+              
+              <button
+                onClick={onExit}
+                className="p-2 rounded-lg bg-red-900/30 border border-red-600/50 text-red-300 hover:bg-red-800/40 transition-colors"
+                title="إنهاء الاختبار"
+              >
+                <Square className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Test Content */}
-      <div className="flex-1 py-8">
-        {/* Paused Overlay */}
-        {testState === 'paused' && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="bg-gray-900 rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 text-center">
-              <div className="w-20 h-20 bg-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Pause size={32} className="text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">
-                الاختبار متوقف مؤقتاً
-              </h3>
-              <p className="text-gray-400 mb-8">
-                يمكنك أخذ استراحة والعودة متى شئت
-              </p>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={resumeTest}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition-all"
-                >
-                  متابعة
-                </button>
-                <button
-                  onClick={onExit}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold transition-all"
-                >
-                  إنهاء
-                </button>
-              </div>
-            </div>
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {testState === 'paused' ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-6">⏸️</div>
+            <h2 className="text-2xl font-bold text-white mb-4">الاختبار متوقف مؤقتاً</h2>
+            <p className="text-gray-400 mb-8">انقر على زر الاستئناف للمتابعة</p>
+            
+            <button
+              onClick={resumeTest}
+              className="flex items-center gap-2 mx-auto px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-blue-700 transition-all"
+            >
+              <Play className="w-5 h-5" />
+              استئناف الاختبار
+            </button>
           </div>
-        )}
-
-        {/* Test Questions */}
-        {testState !== 'ready' && testState !== 'completed' && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {renderCurrentTest()}
-          </div>
+        ) : (
+          renderCurrentQuestion()
         )}
       </div>
 
-      {/* Bottom Controls */}
-      {(testState === 'active' || testState === 'paused') &&
-        !showCurrentResult && (
-          <div className="sticky bottom-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-700/50 p-4">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
+      {/* Navigation Footer */}
+      {testState === 'active' && (
+        <div className="sticky bottom-0 bg-gray-900/80 backdrop-blur-xl border-t border-gray-700/50">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              
               {/* Previous Button */}
               <button
                 onClick={prevQuestion}
                 disabled={!hasPrevQuestion}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                  hasPrevQuestion
-                    ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                }`}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <ChevronRight size={20} />
-                <span className="hidden sm:inline">السابق</span>
+                <ChevronLeft className="w-5 h-5" />
+                السابق
               </button>
 
-              {/* Middle Info */}
-              <div className="flex items-center space-x-4">
-                {test.settings.allowSkip && (
-                  <button
-                    onClick={handleSkipQuestion}
-                    className="flex items-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold transition-all"
-                  >
-                    <SkipForward size={18} />
-                    <span className="hidden sm:inline">تخطي</span>
-                  </button>
-                )}
+              {/* Skip Button */}
+              {test.settings.allowSkip && (
+                <button
+                  onClick={handleSkip}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-900/30 border border-orange-600/50 text-orange-300 rounded-lg hover:bg-orange-800/40 transition-all"
+                >
+                  <SkipForward className="w-5 h-5" />
+                  تخطي
+                </button>
+              )}
 
-                <div className="text-white text-center">
-                  <div className="font-bold">
-                    {currentQuestionIndex + 1} / {test.questions.length}
-                  </div>
-                  <div className="text-xs text-gray-400">السؤال الحالي</div>
-                </div>
-              </div>
-
-              {/* Next Button */}
+              {/* Next/Finish Button */}
               <button
-                onClick={isLastQuestion ? finishTest : nextQuestion}
-                className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all"
+                onClick={isLastQuestion ? completeTest : nextQuestion}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
               >
-                <span className="hidden sm:inline">
-                  {isLastQuestion ? 'إنهاء' : 'التالي'}
-                </span>
                 {isLastQuestion ? (
-                  <Trophy size={20} />
+                  <>
+                    <Trophy className="w-5 h-5" />
+                    إنهاء
+                  </>
                 ) : (
-                  <ChevronLeft size={20} />
+                  <>
+                    التالي
+                    <ChevronRight className="w-5 h-5" />
+                  </>
                 )}
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }
